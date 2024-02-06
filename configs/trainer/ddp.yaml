@@ -1,0 +1,12 @@
+_target_: pytorch_lightning.Trainer
+devices: 4
+strategy: ddp_find_unused_parameters_true
+accelerator: gpu
+max_epochs: 100
+min_epochs: 80
+check_val_every_n_epoch: 1
+logger:
+  _target_: pytorch_lightning.loggers.WandbLogger
+  save_dir: /home/luz21/REPO/multimodal_contrastive/log
+  project: mocop
+  entity: luz21

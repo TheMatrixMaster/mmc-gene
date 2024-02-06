@@ -1,0 +1,13 @@
+_target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
+dataset:
+    _target_: multimodal_contrastive.data.dataset.TestDataset
+    data: /projects/global/gred/resbioai/multimodal/mocop/chembl20_all.csv
+    mol_col: smiles
+    label_col:
+    sample_ratio: 0.01
+batch_size: 512
+num_workers: 8
+split_sizes:
+    - 0.8
+    - 0.1
+    - 0.1

@@ -1,0 +1,54 @@
+defaults:
+  - datamodule: jump.yaml
+  - model: clip_sm.yaml
+  - callbacks: default.yaml
+  - trainer: default.yaml
+  - evaluations: default.yaml
+  - _self_
+
+datamodule:
+  split_type: random # can be random, scaffold, fingerprint, or butina, default is random
+  dataset:
+    mods:
+    - struct
+    - morph
+    joint_as_input: False # need to set to be False for clip style model
+    data: /projects/global/gred/resbioai/multimodal/mocop/jump/h5/jump_pp_fast_20231213.h5 # change this to the actual path
+    morph_mode: mean
+  batch_size: 128
+  num_workers: 8
+  split_sizes:
+      - 0.8
+      - 0.1
+      - 0.1
+
+model:
+  loss_name: clip # set loss_name==clip for clip style model
+  temperature: 0.2
+  lr: 0.0001
+  dim: 128
+  nonlin: ReLU
+  # num_input_features: 1746 #puma morph input feature size
+  morph_input_dim: 3297 #for jump morph
+
+callbacks:
+    model_checkpoint:
+        monitor: val/loss
+        mode: min
+
+trainer:
+  max_epochs: 2
+  logger:
+    save_dir: /home/luz21/scratch/mmc
+    project: mmc_sim
+    entity: luz21
+
+evaluation:
+  retrieval_pairs:
+      - ['struct', 'morph']
+      - ['morph', 'struct']
+      
+# simply provide checkpoint path to resume training
+ckp_path:
+
+seed: 0
