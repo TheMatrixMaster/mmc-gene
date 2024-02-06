@@ -1,0 +1,5 @@
+defaults:
+  - linear_probe_online.yaml
+  # - linear_probe_final.yaml
+  - retrieval_evaluation.yaml
+  - _self_

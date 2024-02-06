@@ -1,0 +1,12 @@
+#!/bin/bash -i
+#BSUB -J sweeps[1-20]
+#BSUB -n 8
+#BSUB -sla gRED_resbioai_gpu
+#BSUB -gpu "num=1"
+#BSUB -o /home/luz21/scratch/logs/output.%I
+#BSUB -e /home/luz21/scratch/logs/output.%I
+
+sweep_path=luz21/puma_paper_sweeps/8mzgkzwl
+
+conda activate mmc
+HYDRA_FULL_ERROR=1 wandb agent $sweep_path --count 50

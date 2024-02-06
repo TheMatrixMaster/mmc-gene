@@ -1,0 +1,12 @@
+linear_probe_online:
+    _target_: multimodal_contrastive.evaluation.evaluation.LinearProbeOnlineEvaluator
+    dataset:
+        _target_: multimodal_contrastive.data.dataset.TestDataset
+        data: /projects/global/gred/resbioai/multimodal/mocop/chembl20_all.csv
+        mol_col: smiles
+        label_col:
+        sample_ratio: 0.01
+    
+    num_folds: 1
+    seed: 0
+    mod_name: struct

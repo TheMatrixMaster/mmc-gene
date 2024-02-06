@@ -1,0 +1,9 @@
+retrieval_evaluation:
+    _target_: multimodal_contrastive.evaluation.evaluation.RetrievalOnlineEvaluator
+    neg_size: 100
+    seed: 0
+    retrieval_pairs:
+        - ['struct', 'morph']
+        - ['morph', 'struct']
+        #   # - ['ge', 'struct']
+        #   # - ['struct', 'ge']

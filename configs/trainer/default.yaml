@@ -1,0 +1,12 @@
+_target_: pytorch_lightning.Trainer
+devices: 1
+strategy: auto
+accelerator: gpu
+max_epochs: 50
+min_epochs: 4
+check_val_every_n_epoch: 1
+logger:
+  _target_: pytorch_lightning.loggers.WandbLogger
+  save_dir: /home/luz21/REPO/multimodal_contrastive/log
+  project: multimodal_contrastive
+  entity: luz21
