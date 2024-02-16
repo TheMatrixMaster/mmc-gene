@@ -44,13 +44,13 @@ class MultiInput_DataModule(pl.LightningDataModule):
 
         self.train_dataset, self.val_dataset, self.test_dataset = split_data(
             self.dataset, 
-            split_type=self.split_type, 
+            split_type=self.split_type,
             sizes=self.split_sizes, 
             seed=self.seed,
             holdout=self.holdout,
             holdout_notion=self.holdout_notion,
             holdout_to=self.holdout_to,
-            )
+        )
         
         print('Train on {} samples.'.format(len(self.train_dataset)))
         print('Validate on {} samples.'.format(len(self.val_dataset))) 

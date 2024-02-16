@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import torch.nn.functional as F
+from collections import defaultdict
 
 from omegaconf import ListConfig, OmegaConf, DictConfig
 from multimodal_contrastive.networks.utils import move_batch_input_to_device

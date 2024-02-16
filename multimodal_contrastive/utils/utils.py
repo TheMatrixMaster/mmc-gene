@@ -1,7 +1,7 @@
 from typing import Any, Callable, List, Optional, List, Sequence
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning import Callback
+from pytorch_lightning import Callback, LightningModule
 import warnings
 import pytorch_lightning as pl
 import torch.nn

@@ -16,3 +16,6 @@ data-checkpoint.py
 *.egg-info*
 log/
 */old/
+datasets/**
+run.sh
+*.out
