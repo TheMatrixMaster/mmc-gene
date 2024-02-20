@@ -19,3 +19,4 @@ log/
 datasets/**
 run.sh
 *.out
+runs/
