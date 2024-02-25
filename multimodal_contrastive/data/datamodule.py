@@ -84,7 +84,17 @@ class MultiInput_DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=False,
-            drop_last=True,
             shuffle=False,
+            drop_last=True,
+        )
+
+    def infer_dataloader(self):
+        return DataLoader(
+            dataset=self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=False,
+            shuffle=False,
+            drop_last=False,
         )
 

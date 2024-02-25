@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from typing import Dict, Union
+from typing import Dict, Union, List
 import hydra
 from torch import nn
 from omegaconf import OmegaConf
@@ -12,6 +12,7 @@ from pytorch_lightning import (
     seed_everything,
 )
 from multimodal_contrastive.utils import utils
+
 import logging
 logging.getLogger().setLevel(logging.INFO)
 import warnings
