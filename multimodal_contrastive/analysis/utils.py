@@ -65,7 +65,7 @@ def get_pairwise_similarity(modx, mody, metric='euclidean'):
 def get_molecular_fingerprints(mols, fp_type='morgan', radius=2, nbits=2048):
     fps = []
     if fp_type == 'morgan':
-        fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
+        fpgen = AllChem.GetMorganGenerator(radius=radius, fpSize=nbits)
         for mol in tqdm(mols):
             mol = Chem.MolFromSmiles(mol)
             fp = fpgen.GetSparseCountFingerprint(mol)

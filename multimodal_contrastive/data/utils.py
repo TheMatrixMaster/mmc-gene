@@ -50,7 +50,7 @@ def recursive_len(item):
         return 1
 
 
-def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, holdout=None, holdout_notion='inchi', holdout_to=None):
+def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, holdout=None, holdout_notion='inchi', holdout_to=None, return_idx=False):
     """
     Split dataset in train/val/test sets, using a specific splitting strategy.
     Each random seed leads to a different split.
@@ -124,5 +124,8 @@ def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, hold
         CustomSubset(dataset, val_ix),
         CustomSubset(dataset, test_ix),
     )
+
+    if return_idx:
+        return train, val, test, train_ix, val_ix, test_ix
 
     return train, val, test
