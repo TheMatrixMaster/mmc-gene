@@ -50,7 +50,7 @@ projectors_mod:
         - ${....hid_dim}
         output_size: ${...proj_dim}
         nonlin: ReLU
-    ge:   
+    ge:
         _target_: multimodal_contrastive.networks.components.MultiLayerPerceptron
         num_input_features: ${...encode_dim}
         hidden_layer_dimensions: 

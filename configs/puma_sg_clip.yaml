@@ -38,13 +38,14 @@ trainer:
   max_epochs: 50
   logger:
     save_dir: /home/mila/s/stephen.lu/scratch/mmc
-    project: mmc_sim
+    project: omics-guided-gfn
     entity: thematrixmaster
 
-evaluation:
-  retrieval_pairs:
-      - ['struct', 'ge']
-      - ['ge', 'struct']
+evaluations:
+  retrieval_evaluation:
+    retrieval_pairs:
+        - ['struct', 'morph']
+        - ['morph', 'struct']
       
 # simply provide checkpoint path to resume training
 ckp_path:

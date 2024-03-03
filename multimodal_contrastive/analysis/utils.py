@@ -55,7 +55,7 @@ def get_pairwise_similarity(modx, mody, metric='euclidean'):
     assert len(modx) == len(mody)
     
     if metric == 'euclidean':
-        return euclidean_distances(modx, mody)
+        return 1 / np.exp(euclidean_distances(modx, mody))
     elif metric == 'cosine':
         return cosine_similarity(modx, mody)
     else:

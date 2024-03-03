@@ -22,6 +22,12 @@ import itertools
 from scipy.stats import rankdata
 import random
 
+from multimodal_contrastive.analysis.utils import (
+    unroll_dataloader,
+    get_pairwise_similarity,
+    get_values_from_dist_mat,
+)
+
 
 def get_rankings(given_emb, target_emb, neg_size=100, metric="cosine", seed=0):
     np.random.seed(seed)
@@ -89,6 +95,17 @@ def sample_select_idxs(sim_mat, neg_size, seed=0):
         indices[0] = cur_mol_idx
         select_idxs.append(indices)
     return select_idxs
+
+
+def make_eval_data_loader(dataset, batch_size=128):
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=0,
+        pin_memory=False,
+        shuffle=False,
+        drop_last=False,
+    )
 
 
 def batch_avg_retrieval_acc(
@@ -245,6 +262,54 @@ def linear_probe_Kfold(
         all_test_ap.append(lp_results["ap"])
         all_test_auc.append(lp_results["auc"])
     return {"auc": np.mean(all_test_auc), "ap": np.mean(all_test_ap)}
+
+
+class LatentDistCorrelationEvaluator(Callback):
+    def __init__(self, model, x_mode, x_dist, y_mode, y_dist, seed=0):
+        self.seed = seed
+        self.dataset = None
+        self.eval_model = model
+
+        assert x_mode in ["struct-ge", "joint-ge"], "x_mode must be struct-ge or joint-ge"
+        assert y_mode in ["raw_ge"], "y_mode must be raw_ge"
+        assert x_dist in ["euclidean", "cosine"], "x_dist must be euclidean or cosine"
+        assert y_dist in ["euclidean", "cosine"], "y_dist must be euclidean or cosine"
+
+        self.x_mode = x_mode
+        self.y_mode = y_mode
+        self.x_dist = x_dist
+        self.y_dist = y_dist
+
+    def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        self.dataset = trainer.datamodule.val_dataloader().dataset
+        eval_loader = make_eval_data_loader(self.dataset)
+        mods = unroll_dataloader(eval_loader, mods=['ge', 'morph'])
+
+        if self.y_mode == "raw_ge":
+            self.y = get_pairwise_similarity(mods['ge'], mods['ge'], metric=self.y_dist)
+
+    def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        self.eval_model.load_state_dict(pl_module.state_dict())
+        self.eval_model.eval()
+        self.eval_model.to(device=pl_module.device)
+
+        eval_loader = make_eval_data_loader(self.dataset)
+        repr, mols = self.eval_model.compute_representation_dataloader(
+            eval_loader,
+            device=pl_module.device,
+            return_mol=True
+        )
+
+        if self.x_mode == "struct-ge":
+            x = get_pairwise_similarity(repr["struct"], repr["ge"], metric=self.x_dist)
+        elif self.x_mode == "joint-ge":
+            x = get_pairwise_similarity(repr["joint"], repr["ge"], metric=self.x_dist)
+
+        x, y = get_values_from_dist_mat(x, self.y, keep_diag=True)
+        corr = np.corrcoef(x, y)[0, 1]
+        
+        key = "{}~{}".format(self.x_mode, self.y_mode)
+        pl_module.log(key, corr, prog_bar=True, sync_dist=True)
 
 
 class RetrievalOnlineEvaluator(Callback):

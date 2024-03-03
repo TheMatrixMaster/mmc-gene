@@ -104,7 +104,11 @@ def instantiate_evaluations(cfg: DictConfig) -> List[Callback]:
         elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.RetrievalOnlineEvaluator':
             model = instantiate_model(cfg)
             cb_instance = hydra.utils.instantiate(cb_conf, model=model)
-            
+        
+        elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.LatentDistCorrelationEvaluator':
+            model = instantiate_model(cfg)
+            cb_instance = hydra.utils.instantiate(cb_conf, model=model)
+
         else:
             cb_instance = hydra.utils.instantiate(cb_conf)
             

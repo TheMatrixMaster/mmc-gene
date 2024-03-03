@@ -7,13 +7,13 @@ defaults:
   - _self_
 
 datamodule:
-  split_type: random # can be random, scaffold, fingerprint, or butina, default is random
+  split_type: scaffold # can be random, scaffold, fingerprint, or butina, default is random
   dataset:
     mods:
     - struct
     - morph
     joint_as_input: True
-    data: /projects/global/gred/resbioai/multimodal/mocop/jump/h5/jump_pp_fast_20231213.h5 # change this to the actual path
+    data: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/datasets/jump_pp_fast_public.h5 # change this to the actual path
     morph_mode: mean
   batch_size: 128
   num_workers: 8
@@ -29,7 +29,7 @@ model:
   dim: 128
   nonlin: ReLU
   # num_input_features: 1746 #puma morph input feature size
-  morph_input_dim: 3297 #for jump morph
+  morph_input_dim: 3483 #for jump morph
 
 callbacks:
     model_checkpoint:
@@ -37,16 +37,17 @@ callbacks:
         mode: min
 
 trainer:
-  max_epochs: 2
+  max_epochs: 100
   logger:
-    save_dir: /home/luz21/scratch/mmc
-    project: mmc_sim
-    entity: luz21
+    save_dir: /home/mila/s/stephen.lu/scratch/mmc
+    project: omics-guided-gfn
+    entity: thematrixmaster
 
-evaluation:
-  retrieval_pairs:
-      - ['struct', 'morph']
-      - ['morph', 'struct']
+evaluations:
+  retrieval_evaluation:
+    retrieval_pairs:
+        - ['struct', 'morph']
+        - ['morph', 'struct']
       
 # simply provide checkpoint path to resume training
 ckp_path:

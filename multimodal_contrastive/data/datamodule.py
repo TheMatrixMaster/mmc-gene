@@ -76,8 +76,8 @@ class MultiInput_DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=False,
-            drop_last=True,
             shuffle=False,
+            drop_last=True,
             # collate_fn=self.Collator, 
         )
 
