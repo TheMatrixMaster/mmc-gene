@@ -31,6 +31,9 @@ def train(cfg):
         logging.info(f"Seed everything with <{cfg.seed}>")
         seed_everything(cfg.seed, workers=True)
 
+    # Print configuration
+    print(cfg)
+
     # Init lightning datamodule
     logging.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)

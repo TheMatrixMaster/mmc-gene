@@ -9,7 +9,7 @@ defaults:
   - _self_
 
 datamodule:
-  split_type: random # can be random, scaffold, fingerprint, or butina, default is random
+  split_type: scaffold # can be random, scaffold, fingerprint, or butina, default is random
   dataset:
     mods: 
     - struct
@@ -47,7 +47,7 @@ trainer:
 
 evaluations:
   latent_dist_correlation:
-    x_mode: "joint-ge"
+    x_mode: "struct-ge"
     x_dist: "cosine"
     y_mode: "raw_ge"
     y_dist: "euclidean"
