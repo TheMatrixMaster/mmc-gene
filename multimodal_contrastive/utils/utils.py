@@ -1,7 +1,7 @@
 from typing import Any, Callable, List, Optional, List, Sequence
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning import Callback
+from pytorch_lightning import Callback, LightningModule
 import warnings
 import pytorch_lightning as pl
 import torch.nn
@@ -104,7 +104,11 @@ def instantiate_evaluations(cfg: DictConfig) -> List[Callback]:
         elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.RetrievalOnlineEvaluator':
             model = instantiate_model(cfg)
             cb_instance = hydra.utils.instantiate(cb_conf, model=model)
-            
+        
+        elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.LatentDistCorrelationEvaluator':
+            model = instantiate_model(cfg)
+            cb_instance = hydra.utils.instantiate(cb_conf, model=model)
+
         else:
             cb_instance = hydra.utils.instantiate(cb_conf)
             

@@ -5,5 +5,5 @@ retrieval_evaluation:
     retrieval_pairs:
         - ['struct', 'morph']
         - ['morph', 'struct']
-        #   # - ['ge', 'struct']
-        #   # - ['struct', 'ge']
+        - ['ge', 'struct']
+        - ['struct', 'ge']

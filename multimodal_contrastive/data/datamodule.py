@@ -42,14 +42,17 @@ class MultiInput_DataModule(pl.LightningDataModule):
 
     def setup(self, stage: str):
 
-        self.train_dataset, self.val_dataset, self.test_dataset = split_data(
-            self.dataset, 
-            split_type=self.split_type, 
-            sizes=self.split_sizes, 
-            seed=self.seed,
-            holdout=self.holdout,
-            holdout_notion=self.holdout_notion,
-            holdout_to=self.holdout_to,
+        self.train_dataset, self.val_dataset, self.test_dataset, \
+        self.train_idx, self.val_idx, self.test_idx \
+            = split_data(
+                self.dataset, 
+                split_type=self.split_type,
+                sizes=self.split_sizes, 
+                seed=self.seed,
+                holdout=self.holdout,
+                holdout_notion=self.holdout_notion,
+                holdout_to=self.holdout_to,
+                return_idx=True,
             )
         
         print('Train on {} samples.'.format(len(self.train_dataset)))
@@ -73,8 +76,8 @@ class MultiInput_DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=False,
-            drop_last=True,
             shuffle=False,
+            drop_last=True,
             # collate_fn=self.Collator, 
         )
 
@@ -84,7 +87,20 @@ class MultiInput_DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=False,
-            drop_last=True,
             shuffle=False,
+            drop_last=True,
         )
 
+    def infer_dataloader(self):
+        return DataLoader(
+            dataset=self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=False,
+            shuffle=False,
+            drop_last=False,
+        )
+
+    def get_split_idx(self):
+        return self.train_idx, self.val_idx, self.test_idx
+    

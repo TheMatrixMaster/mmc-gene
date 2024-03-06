@@ -1,7 +1,7 @@
-program: /home/luz21/REPO/mmc_wua/multimodal_contrastive/pretrain.py
+program: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/multimodal_contrastive/pretrain.py
 description: puma_paper_sweeps
 project: puma_paper_sweeps
-entity: luz21
+entity: thematrixmaster
 
 method: bayes
 metric:

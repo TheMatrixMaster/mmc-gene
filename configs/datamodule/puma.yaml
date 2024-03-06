@@ -1,11 +1,11 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.H5DatasetPUMA
-    data: /projects/global/gred/resbioai/multimodal/PUMA_data/puma_by_mod_20240103.h5
+    data: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/datasets/puma_by_mod_20240103.h5
     labels:
     mods: 
     - struct
-    # - morph
+    - morph
     - ge
     joint_as_input: True
 batch_size: 128
