@@ -1,6 +1,6 @@
 defaults:
   - datamodule: puma.yaml
-  - model: gmc_sm.yaml
+  - model: gmc_sg.yaml
   - callbacks: default.yaml
   - trainer: default.yaml
   - evaluations:
@@ -11,9 +11,9 @@ defaults:
 datamodule:
   split_type: shuffled_scaffold
   dataset:
-    mods: 
+    mods:
     - struct
-    - morph
+    - ge
     joint_as_input: True
   batch_size: 128
   num_workers: 8
@@ -24,17 +24,13 @@ datamodule:
 
 model:
   loss_name: gmc
-  morph_input_dim: 1746
   temperature: 0.4
   lr: 0.000002
   dim: 1024
-  nonlin: ReLU
-  num_input_features: 1746 # puma morph input feature size
-  # num_input_features: 3483 # for jump morph
 
 callbacks:
     model_checkpoint:
-        monitor: struct-morph~pca_morph~val
+        monitor: struct-ge~raw_ge~val
         mode: max
 
 trainer:
@@ -49,14 +45,14 @@ evaluations:
   latent_dist_correlation:
       modes:
         - "joint"
-        - "morph"
         - "struct"
+        - "ge"
   retrieval_evaluation:
     retrieval_pairs:
-        - ['struct', 'morph']
-        - ['morph', 'struct']
+        - ['struct', 'ge']
+        - ['ge', 'struct']
       
 # simply provide checkpoint path to resume training
 ckp_path:
 
-seed: 0
+seed: 21

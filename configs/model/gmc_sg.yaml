@@ -1,0 +1,57 @@
+_target_: multimodal_contrastive.networks.models.GMC_PL
+loss_name: gmc
+temperature: 0.03
+lr: 0.0001
+dim: 256
+encode_dim: ${.dim}
+proj_dim: ${.dim}
+latent_dim: ${.dim}
+hid_dim: ${.dim}
+encoders_mod:
+    struct:
+        _target_: multimodal_contrastive.networks.components.GNEpropGIN
+        in_channels: 133
+        edge_dim: 12
+        hidden_channels: ${...encode_dim} #same as output size when jk is none
+        ffn_hidden_channels:
+        num_layers: 5
+        out_channels: 1
+        num_readout_layers: 2
+        mol_features_size: 0. 
+        dropout: 0. 
+        jk: none
+    ge:
+        _target_: multimodal_contrastive.networks.components.MultiLayerPerceptron
+        num_input_features: 977
+        hidden_layer_dimensions:
+        - ${....hid_dim}
+        output_size: ${...encode_dim}
+        nonlin: ReLU
+projectors_mod:
+    struct:
+        _target_: multimodal_contrastive.networks.components.MultiLayerPerceptron
+        num_input_features: ${...encode_dim}
+        hidden_layer_dimensions:
+        - ${....hid_dim}
+        output_size: ${...proj_dim}
+        nonlin: ReLU
+    ge:
+        _target_: multimodal_contrastive.networks.components.MultiLayerPerceptron
+        num_input_features: ${...encode_dim}
+        hidden_layer_dimensions: 
+        - ${....hid_dim}
+        output_size: ${...proj_dim}
+        nonlin: ReLU
+    joint:
+        _target_: multimodal_contrastive.networks.components.MultiLayerPerceptron
+        num_input_features: ${sum:[${..[struct].num_input_features}, ${..[ge].num_input_features}]}
+        hidden_layer_dimensions: 
+        - ${....hid_dim}
+        output_size: ${...proj_dim}
+        nonlin: ReLU
+common_encoder:
+    _target_: multimodal_contrastive.networks.components.CommonEncoder
+    common_dim: ${..proj_dim}
+    hidden_layer_dimensions: 
+    - ${...hid_dim}
+    latent_dim: ${..latent_dim}

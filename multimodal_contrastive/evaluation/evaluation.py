@@ -293,9 +293,9 @@ class LatentDistCorrelationEvaluator(Callback):
         test_mods = unroll_dataloader(test_loader, mods=ok_mods)
 
         if self.has_ge:
-            self.raw_ge_sim_train = get_pairwise_similarity(train_mods['ge'], train_mods['ge'], metric="euclidean", force_positive=True)
-            self.raw_ge_sim_val = get_pairwise_similarity(val_mods['ge'], val_mods['ge'], metric="euclidean", force_positive=True)
-            self.raw_ge_sim_test = get_pairwise_similarity(test_mods['ge'], test_mods['ge'], metric="euclidean", force_positive=True)
+            self.raw_ge_sim_train = get_pairwise_similarity(train_mods['ge'], train_mods['ge'], metric="cosine")
+            self.raw_ge_sim_val = get_pairwise_similarity(val_mods['ge'], val_mods['ge'], metric="cosine")
+            self.raw_ge_sim_test = get_pairwise_similarity(test_mods['ge'], test_mods['ge'], metric="cosine")
 
         if self.has_morph:
             pca = PCA(n_components=30)
