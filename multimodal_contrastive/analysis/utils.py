@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from collections import defaultdict
+from torch_geometric.loader import DataLoader
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 from multimodal_contrastive.networks.utils import move_batch_input_to_device
 
@@ -11,15 +12,28 @@ from rdkit.Chem import DataStructs
 
 
 def random_subset(mols, representations, cutoff=3000):
+    idx = []
     if len(mols) > cutoff:
         idx = np.random.choice(len(mols), cutoff, replace=False)
         pMols = np.array(mols)[idx]
         pRepresentations = {k: np.array(v)[idx] for k,v in representations.items()}
     else:
+        idx = np.arange(len(mols))
         pMols = np.array(mols)
         pRepresentations = representations
     
-    return pMols, pRepresentations
+    return pMols, pRepresentations, idx
+
+
+def make_eval_data_loader(dataset, batch_size=128):
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=0,
+        pin_memory=False,
+        shuffle=False,
+        drop_last=False,
+    )
 
 
 def unroll_dataloader(dataloader, mods=['ge'], device='cpu'):
@@ -50,14 +64,23 @@ def save_representations(representations, mols, path):
     )
 
 
-def get_pairwise_similarity(modx, mody, metric='euclidean'):
+def get_pairwise_similarity(modx, mody, metric='euclidean', force_positive=False):
     assert modx.shape[1] == mody.shape[1]
     assert len(modx) == len(mody)
     
     if metric == 'euclidean':
-        return 1 / np.exp(euclidean_distances(modx, mody))
+        if force_positive:
+            return 1 / np.exp(euclidean_distances(modx, mody))
+        else:
+            return euclidean_distances(modx, mody)
     elif metric == 'cosine':
         return cosine_similarity(modx, mody)
+    elif metric == 'mse':
+        mse = np.zeros((idx, idx), dtype=float)
+        for i1 in tqdm(range(idx)):
+            for i2 in range(idx):
+                mse[i1, i2] = np.mean((ge[i1]-ge[i2])**2)
+        return mse
     else:
         raise ValueError(f'Unknown metric: {metric}')
     

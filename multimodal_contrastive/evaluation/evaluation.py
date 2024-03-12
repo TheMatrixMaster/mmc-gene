@@ -6,6 +6,7 @@ from torch import nn
 from torch.optim import Optimizer
 from tqdm import trange
 import sklearn
+from sklearn.decomposition import PCA
 import numpy as np
 from tqdm import tqdm
 from multimodal_contrastive.data.utils import split_data
@@ -26,6 +27,7 @@ from multimodal_contrastive.analysis.utils import (
     unroll_dataloader,
     get_pairwise_similarity,
     get_values_from_dist_mat,
+    make_eval_data_loader
 )
 
 
@@ -95,17 +97,6 @@ def sample_select_idxs(sim_mat, neg_size, seed=0):
         indices[0] = cur_mol_idx
         select_idxs.append(indices)
     return select_idxs
-
-
-def make_eval_data_loader(dataset, batch_size=128):
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        num_workers=0,
-        pin_memory=False,
-        shuffle=False,
-        drop_last=False,
-    )
 
 
 def batch_avg_retrieval_acc(
@@ -265,51 +256,111 @@ def linear_probe_Kfold(
 
 
 class LatentDistCorrelationEvaluator(Callback):
-    def __init__(self, model, x_mode, x_dist, y_mode, y_dist, seed=0):
+    def __init__(self, model, modes, seed=0):
         self.seed = seed
         self.dataset = None
         self.eval_model = model
 
-        assert x_mode in ["struct-ge", "joint-ge"], "x_mode must be struct-ge or joint-ge"
-        assert y_mode in ["raw_ge"], "y_mode must be raw_ge"
-        assert x_dist in ["euclidean", "cosine"], "x_dist must be euclidean or cosine"
-        assert y_dist in ["euclidean", "cosine"], "y_dist must be euclidean or cosine"
+        for mode in modes:
+            assert mode in ["struct", "ge", "morph", "joint"]
 
-        self.x_mode = x_mode
-        self.y_mode = y_mode
-        self.x_dist = x_dist
-        self.y_dist = y_dist
+        self.mods = modes
+        self.has_struct = "struct" in modes
+        self.has_ge = "ge" in modes
+        self.has_morph = "morph" in modes
+        self.has_joint = "joint" in modes
+
+    def _logCorrelation(self, x, y, x_mode, y_mode, split, pl_module, keep_diag=True) -> None:
+        x, y = get_values_from_dist_mat(x, y, keep_diag=keep_diag)
+        corr = np.corrcoef(x, y)[0, 1]
+        key = "{}~{}~{}".format(x_mode, y_mode, split)
+        pl_module.log(key, corr, prog_bar=True, sync_dist=True)
 
     def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        self.dataset = trainer.datamodule.val_dataloader().dataset
-        eval_loader = make_eval_data_loader(self.dataset)
-        mods = unroll_dataloader(eval_loader, mods=['ge', 'morph'])
+        ok_mods = list(set(self.mods) & set(["ge", "morph"]))
 
-        if self.y_mode == "raw_ge":
-            self.y = get_pairwise_similarity(mods['ge'], mods['ge'], metric=self.y_dist)
+        self.val_dataset = trainer.datamodule.val_dataloader().dataset
+        val_loader = make_eval_data_loader(self.val_dataset)
+        val_mods = unroll_dataloader(val_loader, mods=ok_mods)
+
+        self.train_dataset = trainer.datamodule.train_dataloader()\
+            .dataset.subset(size=len(self.val_dataset))
+        train_loader = make_eval_data_loader(self.train_dataset)
+        train_mods = unroll_dataloader(train_loader, mods=ok_mods)
+
+        self.test_dataset = trainer.datamodule.test_dataloader().dataset
+        test_loader = make_eval_data_loader(self.test_dataset)
+        test_mods = unroll_dataloader(test_loader, mods=ok_mods)
+
+        if self.has_ge:
+            self.raw_ge_sim_train = get_pairwise_similarity(train_mods['ge'], train_mods['ge'], metric="cosine")
+            self.raw_ge_sim_val = get_pairwise_similarity(val_mods['ge'], val_mods['ge'], metric="cosine")
+            self.raw_ge_sim_test = get_pairwise_similarity(test_mods['ge'], test_mods['ge'], metric="cosine")
+
+        if self.has_morph:
+            pca = PCA(n_components=30)
+            # fit pca on train and transform on val and test
+            morph_pca_train = pca.fit_transform(train_mods["morph"])
+            morph_pca_val = pca.transform(val_mods['morph'])
+            morph_pca_test = pca.transform(test_mods['morph'])
+            
+            self.pca_morph_sim_train = get_pairwise_similarity(morph_pca_train, morph_pca_train, metric="cosine")
+            self.pca_morph_sim_val = get_pairwise_similarity(morph_pca_val, morph_pca_val, metric="cosine")
+            self.pca_morph_sim_test = get_pairwise_similarity(morph_pca_test, morph_pca_test, metric="cosine")
+        
+        if self.has_struct:
+            # TODO compute tanimoto sim between molecules
+            pass
 
     def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         self.eval_model.load_state_dict(pl_module.state_dict())
         self.eval_model.eval()
         self.eval_model.to(device=pl_module.device)
 
-        eval_loader = make_eval_data_loader(self.dataset)
-        repr, mols = self.eval_model.compute_representation_dataloader(
-            eval_loader,
-            device=pl_module.device,
-            return_mol=True
-        )
-
-        if self.x_mode == "struct-ge":
-            x = get_pairwise_similarity(repr["struct"], repr["ge"], metric=self.x_dist)
-        elif self.x_mode == "joint-ge":
-            x = get_pairwise_similarity(repr["joint"], repr["ge"], metric=self.x_dist)
-
-        x, y = get_values_from_dist_mat(x, self.y, keep_diag=True)
-        corr = np.corrcoef(x, y)[0, 1]
+        train_loader = make_eval_data_loader(self.train_dataset)
+        val_loader = make_eval_data_loader(self.val_dataset)
+        test_loader = make_eval_data_loader(self.test_dataset)
         
-        key = "{}~{}".format(self.x_mode, self.y_mode)
-        pl_module.log(key, corr, prog_bar=True, sync_dist=True)
+        with torch.no_grad():
+            train_repr = self.eval_model.compute_representation_dataloader(train_loader, device=pl_module.device)
+            val_repr = self.eval_model.compute_representation_dataloader(val_loader, device=pl_module.device)
+            test_repr = self.eval_model.compute_representation_dataloader(test_loader, device=pl_module.device)
+        
+        if self.has_struct and self.has_ge:
+            struct_ge_sim_train = get_pairwise_similarity(train_repr["struct"], train_repr["ge"], metric="cosine")
+            struct_ge_sim_val = get_pairwise_similarity(val_repr["struct"], val_repr["ge"], metric="cosine")
+            struct_ge_sim_test = get_pairwise_similarity(test_repr["struct"], test_repr["ge"], metric="cosine")
+
+            self._logCorrelation(struct_ge_sim_train, self.raw_ge_sim_train, "struct-ge", "raw_ge", "train", pl_module)
+            self._logCorrelation(struct_ge_sim_val, self.raw_ge_sim_val, "struct-ge", "raw_ge", "val", pl_module)
+            self._logCorrelation(struct_ge_sim_test, self.raw_ge_sim_test, "struct-ge", "raw_ge", "test", pl_module)
+
+        if self.has_joint and self.has_ge:
+            joint_ge_sim_train = get_pairwise_similarity(train_repr["joint"], train_repr["ge"], metric="cosine")
+            joint_ge_sim_val = get_pairwise_similarity(val_repr["joint"], val_repr["ge"], metric="cosine")
+            joint_ge_sim_test = get_pairwise_similarity(test_repr["joint"], test_repr["ge"], metric="cosine")
+
+            self._logCorrelation(joint_ge_sim_train, self.raw_ge_sim_train, "joint-ge", "raw_ge", "train", pl_module)
+            self._logCorrelation(joint_ge_sim_val, self.raw_ge_sim_val, "joint-ge", "raw_ge", "val", pl_module)
+            self._logCorrelation(joint_ge_sim_test, self.raw_ge_sim_test, "joint-ge", "raw_ge", "test", pl_module)
+
+        if self.has_struct and self.has_morph:
+            struct_morph_sim_train = get_pairwise_similarity(train_repr["struct"], train_repr["morph"], metric="cosine")
+            struct_morph_sim_val = get_pairwise_similarity(val_repr["struct"], val_repr["morph"], metric="cosine")
+            struct_morph_sim_test = get_pairwise_similarity(test_repr["struct"], test_repr["morph"], metric="cosine")
+
+            self._logCorrelation(struct_morph_sim_train, self.pca_morph_sim_train, "struct-morph", "pca_morph", "train", pl_module)
+            self._logCorrelation(struct_morph_sim_val, self.pca_morph_sim_val, "struct-morph", "pca_morph", "val", pl_module)
+            self._logCorrelation(struct_morph_sim_test, self.pca_morph_sim_test, "struct-morph", "pca_morph", "test", pl_module)
+
+        if self.has_joint and self.has_morph:
+            joint_morph_sim_train = get_pairwise_similarity(train_repr["joint"], train_repr["morph"], metric="cosine")
+            joint_morph_sim_val = get_pairwise_similarity(val_repr["joint"], val_repr["morph"], metric="cosine")
+            joint_morph_sim_test = get_pairwise_similarity(test_repr["joint"], test_repr["morph"], metric="cosine")
+
+            self._logCorrelation(joint_morph_sim_train, self.pca_morph_sim_train, "joint-morph", "pca_morph", "train", pl_module)
+            self._logCorrelation(joint_morph_sim_val, self.pca_morph_sim_val, "joint-morph", "pca_morph", "val", pl_module)
+            self._logCorrelation(joint_morph_sim_test, self.pca_morph_sim_test, "joint-morph", "pca_morph", "test", pl_module)
 
 
 class RetrievalOnlineEvaluator(Callback):

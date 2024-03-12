@@ -1,7 +1,8 @@
 latent_dist_correlation:
     _target_: multimodal_contrastive.evaluation.evaluation.LatentDistCorrelationEvaluator
-    x_mode: "struct-ge"
-    x_dist: "cosine"
-    y_mode: "raw_ge"
-    y_dist: "euclidean"
+    modes:
+        - "struct"
+        - "ge"
+        - "morph"
+        - "joint"
     seed: 0

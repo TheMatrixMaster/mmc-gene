@@ -3,11 +3,13 @@ defaults:
   - model: clip_sg.yaml
   - callbacks: default.yaml
   - trainer: default.yaml
-  - evaluations: retrieval_evaluation.yaml
+  - evaluations:
+    - latent_dist_correlation.yaml
+    - retrieval_evaluation.yaml
   - _self_
 
 datamodule:
-  split_type: scaffold # can be random, scaffold, fingerprint, or butina, default is random
+  split_type: shuffled_scaffold
   dataset:
     mods:
     - struct
@@ -23,29 +25,34 @@ datamodule:
 model:
   loss_name: clip # set loss_name==clip for clip style model
   morph_input_dim: 1746
-  temperature: 0.2
-  lr: 0.0001
-  dim: 128
+  temperature: 0.4
+  lr: 0.000002
+  dim: 1024
   nonlin: ReLU
-  num_input_features: 1746 #puma morph input feature size
+  num_input_features: 1746 # puma morph input feature size
 
 callbacks:
     model_checkpoint:
-        monitor: val/loss
-        mode: min
+        monitor: struct-ge~raw_ge~val
+        mode: max
 
 trainer:
-  max_epochs: 50
+  max_epochs: 150
+  accelerator: gpu
   logger:
     save_dir: /home/mila/s/stephen.lu/scratch/mmc
     project: omics-guided-gfn
     entity: thematrixmaster
 
 evaluations:
+  latent_dist_correlation:
+      modes:
+        - "struct"
+        - "ge"
   retrieval_evaluation:
     retrieval_pairs:
-        - ['struct', 'morph']
-        - ['morph', 'struct']
+        - ['struct', 'ge']
+        - ['ge', 'struct']
       
 # simply provide checkpoint path to resume training
 ckp_path:

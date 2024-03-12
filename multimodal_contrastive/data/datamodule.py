@@ -22,11 +22,12 @@ class MultiInput_DataModule(pl.LightningDataModule):
         batch_size=128,
         num_workers=8,
         pin_memory=False,
-        split_sizes=(0.8, 0.1, 0.1), 
+        split_sizes=(0.8, 0.1, 0.1),
         split_type='random',
-        holdout=None, 
+        holdout=None,
         holdout_notion='inchi',
         holdout_to=None,
+        seed=0,
     ):
         super().__init__()
         self.dataset = dataset
@@ -35,7 +36,7 @@ class MultiInput_DataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
         self.split_sizes = split_sizes
         self.split_type = split_type
-        self.seed = 0
+        self.seed = seed
         self.holdout = holdout
         self.holdout_notion = holdout_notion
         self.holdout_to = holdout_to

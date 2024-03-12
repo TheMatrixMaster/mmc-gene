@@ -32,6 +32,10 @@ class H5Dataset(torch.utils.data.Dataset):
         if self.y is None:
             self.y = torch.Tensor([-1])
 
+    def subset(self, size=3000):
+        idx = np.random.choice(len(self.ids), size, replace=False)
+        return CustomSubset(self, idx)
+
     def __len__(self):
         return len(self.ids)
 

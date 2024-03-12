@@ -36,7 +36,7 @@ def train(cfg):
 
     # Init lightning datamodule
     logging.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
+    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, seed=cfg.seed)
 
     # Init lightning module
     model: LightningModule = utils.instantiate_model(
