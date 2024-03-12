@@ -18,12 +18,14 @@ from torch_geometric.data import Batch, Dataset
 from torch_geometric.data.data import Data
 from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
 from deepchem.splits import RandomSplitter, ScaffoldSplitter, FingerprintSplitter, ButinaSplitter
+from multimodal_contrastive.data.splitters import ShuffledScaffoldSplitter
 from rdkit import Chem
 
 MASK = -1
 SPLITTERS = {
     "random": RandomSplitter,
     "scaffold": ScaffoldSplitter,
+    "shuffled_scaffold": ShuffledScaffoldSplitter,
     "butina": ButinaSplitter,
     "fingerprint": FingerprintSplitter,
 }

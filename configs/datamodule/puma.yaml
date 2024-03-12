@@ -3,7 +3,7 @@ dataset:
     _target_: multimodal_contrastive.data.dataset.H5DatasetPUMA
     data: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/datasets/puma_by_mod_20240103.h5
     labels:
-    mods: 
+    mods:
     - struct
     - morph
     - ge
