@@ -16,12 +16,12 @@ def random_subset(mols, representations, cutoff=3000):
     if len(mols) > cutoff:
         idx = np.random.choice(len(mols), cutoff, replace=False)
         pMols = np.array(mols)[idx]
-        pRepresentations = {k: np.array(v)[idx] for k,v in representations.items()}
+        pRepresentations = {k: np.array(v)[idx] for k, v in representations.items()}
     else:
         idx = np.arange(len(mols))
         pMols = np.array(mols)
         pRepresentations = representations
-    
+
     return pMols, pRepresentations, idx
 
 
@@ -36,7 +36,7 @@ def make_eval_data_loader(dataset, batch_size=128):
     )
 
 
-def unroll_dataloader(dataloader, mods=['ge'], device='cpu'):
+def unroll_dataloader(dataloader, mods=["ge"], device="cpu"):
     outs = defaultdict(list)
     with torch.no_grad():
         for batch in tqdm(dataloader, position=0, leave=True):
@@ -45,59 +45,58 @@ def unroll_dataloader(dataloader, mods=['ge'], device='cpu'):
             for mod in mods:
                 assert mod in x_dict.keys()
                 outs[mod].append(x_dict[mod])
-                
+
     final_outs = dict()
     for mod in outs.keys():
         final_outs[mod] = np.vstack(outs[mod])
-        
+
     return final_outs
 
 
 def save_representations(representations, mols, path):
-    assert representations['struct'].shape[0] == len(mols)
+    assert representations["struct"].shape[0] == len(mols)
     np.savez(
         path,
-        struct=representations['struct'],
-        morph=representations['morph'] if 'morph' in representations else None,
-        ge=representations['ge'] if 'ge' in representations else None,
-        mols=mols
+        struct=representations["struct"],
+        morph=representations["morph"] if "morph" in representations else None,
+        ge=representations["ge"] if "ge" in representations else None,
+        mols=mols,
     )
 
 
-def get_pairwise_similarity(modx, mody, metric='euclidean', force_positive=False):
+def get_pairwise_similarity(modx, mody, metric="euclidean", force_positive=False):
     assert modx.shape[1] == mody.shape[1]
     assert len(modx) == len(mody)
-    
-    if metric == 'euclidean':
+
+    if metric == "euclidean":
         if force_positive:
             return 1 / np.exp(euclidean_distances(modx, mody))
         else:
             return euclidean_distances(modx, mody)
-    elif metric == 'cosine':
+    elif metric == "cosine":
         return cosine_similarity(modx, mody)
-    elif metric == 'mse':
+    elif metric == "mse":
         mse = np.zeros((idx, idx), dtype=float)
         for i1 in tqdm(range(idx)):
             for i2 in range(idx):
-                mse[i1, i2] = np.mean((ge[i1]-ge[i2])**2)
+                mse[i1, i2] = np.mean((ge[i1] - ge[i2]) ** 2)
         return mse
     else:
-        raise ValueError(f'Unknown metric: {metric}')
-    
+        raise ValueError(f"Unknown metric: {metric}")
 
-def get_molecular_fingerprints(mols, fp_type='morgan', radius=2, nbits=2048):
+
+def get_molecular_fingerprints(mols, fp_type="morgan", radius=2, nbits=2048):
     fps = []
-    if fp_type == 'morgan':
+    if fp_type == "morgan":
         fpgen = AllChem.GetMorganGenerator(radius=radius, fpSize=nbits)
         for mol in tqdm(mols):
             mol = Chem.MolFromSmiles(mol)
             fp = fpgen.GetSparseCountFingerprint(mol)
             fps.append(fp)
     else:
-        raise ValueError(f'Unknown fp_type: {fp_type}')
-    
-    return fps
+        raise ValueError(f"Unknown fp_type: {fp_type}")
 
+    return fps
 
 
 def get_molecular_similarity(fps, metric="tanimoto"):
@@ -112,10 +111,10 @@ def get_molecular_similarity(fps, metric="tanimoto"):
             elif metric == "dice":
                 sim[i, j] = DataStructs.DiceSimilarity(fps[i], fps[j])
             else:
-                raise ValueError(f'Unknown metric: {metric}')
-            
+                raise ValueError(f"Unknown metric: {metric}")
+
             sim[j, i] = sim[i, j]
-    
+
     return sim
 
 
@@ -135,7 +134,5 @@ def get_values_from_dist_mat(x, y, keep_diag=False):
     else:
         # keep upper triangle excluding diagonal
         idx = np.triu_indices(x.shape[0], k=1)
-    
-    return x[idx], y[idx]
 
-    
+    return x[idx], y[idx]

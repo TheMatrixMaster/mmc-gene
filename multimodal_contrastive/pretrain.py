@@ -14,8 +14,10 @@ from pytorch_lightning import (
 from multimodal_contrastive.utils import utils
 
 import logging
+
 logging.getLogger().setLevel(logging.INFO)
 import warnings
+
 warnings.filterwarnings(
     "ignore", category=UserWarning, message="TypedStorage is deprecated"
 )
@@ -36,12 +38,12 @@ def train(cfg):
 
     # Init lightning datamodule
     logging.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, seed=cfg.seed)
+    datamodule: LightningDataModule = hydra.utils.instantiate(
+        cfg.datamodule, seed=cfg.seed
+    )
 
     # Init lightning module
-    model: LightningModule = utils.instantiate_model(
-        cfg
-    )
+    model: LightningModule = utils.instantiate_model(cfg)
 
     # Init callbacks
     logging.info(f"Instantiating callbacks...")
@@ -53,7 +55,9 @@ def train(cfg):
 
     # Init lightning trainer
     logging.info(f"Instantiating trainer... <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks+evaluations)
+    trainer: Trainer = hydra.utils.instantiate(
+        cfg.trainer, callbacks=callbacks + evaluations
+    )
 
     trainer.fit(model, datamodule, ckpt_path=cfg.get("ckpt_path"))
 

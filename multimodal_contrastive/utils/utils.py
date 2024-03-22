@@ -24,25 +24,26 @@ def instantiate_model(cfg: DictConfig):
     Returns:
     model (LightningModule)
     """
-    if cfg.model._target_ == 'multimodal_contrastive.networks.models.GMC_PL':
+    if cfg.model._target_ == "multimodal_contrastive.networks.models.GMC_PL":
         # Init encoder_joint
         logging.info(f"Instantiating torch.nn.module JointEncoder")
-        encoder_joint: torch.nn.module = JointEncoder(encoders_mod=hydra.utils.instantiate(cfg.model.encoders_mod))
-    
+        encoder_joint: torch.nn.module = JointEncoder(
+            encoders_mod=hydra.utils.instantiate(cfg.model.encoders_mod)
+        )
+
         # Init lightning model
         logging.info(f"Instantiating lightning model <{cfg.model._target_}>")
         model: LightningModule = hydra.utils.instantiate(
             cfg.model,
             encoder_joint=encoder_joint,
         )
-    elif cfg.model._target_ == 'multimodal_contrastive.networks.models.CLIP_PL':
+    elif cfg.model._target_ == "multimodal_contrastive.networks.models.CLIP_PL":
         # Init lightning model
         logging.info(f"Instantiating lightning model <{cfg.model._target_}>")
-        model: LightningModule = hydra.utils.instantiate(
-            cfg.model
-        )
+        model: LightningModule = hydra.utils.instantiate(cfg.model)
 
     return model
+
 
 def instantiate_callbacks(cfg: DictConfig) -> List[Callback]:
     """Instantiates callbacks from config.
@@ -96,26 +97,40 @@ def instantiate_evaluations(cfg: DictConfig) -> List[Callback]:
         raise TypeError("Callbacks config must be a DictConfig!")
 
     for _, cb_conf in callbacks_cfg.items():
-        if cb_conf._target_ in ['multimodal_contrastive.evaluation.evaluation.LinearProbeOnlineEvaluator', 'multimodal_contrastive.evaluation.evaluation.LinearProbeFinalEvaluator']:
+        if cb_conf._target_ in [
+            "multimodal_contrastive.evaluation.evaluation.LinearProbeOnlineEvaluator",
+            "multimodal_contrastive.evaluation.evaluation.LinearProbeFinalEvaluator",
+        ]:
             backbone = instantiate_model(cfg)
-            lp_model = MultiTask_model(num_tasks=1310, loss_name='mtl_bceloss', backbone=backbone, mod_name='struct', freeze_backbone=False)
+            lp_model = MultiTask_model(
+                num_tasks=1310,
+                loss_name="mtl_bceloss",
+                backbone=backbone,
+                mod_name="struct",
+                freeze_backbone=False,
+            )
             cb_instance = hydra.utils.instantiate(cb_conf, model=lp_model)
 
-        elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.RetrievalOnlineEvaluator':
+        elif (
+            cb_conf._target_
+            == "multimodal_contrastive.evaluation.evaluation.RetrievalOnlineEvaluator"
+        ):
             model = instantiate_model(cfg)
             cb_instance = hydra.utils.instantiate(cb_conf, model=model)
-        
-        elif cb_conf._target_ == 'multimodal_contrastive.evaluation.evaluation.LatentDistCorrelationEvaluator':
+
+        elif (
+            cb_conf._target_
+            == "multimodal_contrastive.evaluation.evaluation.LatentDistCorrelationEvaluator"
+        ):
             model = instantiate_model(cfg)
             cb_instance = hydra.utils.instantiate(cb_conf, model=model)
 
         else:
             cb_instance = hydra.utils.instantiate(cb_conf)
-            
+
         callbacks.append(cb_instance)
 
     return callbacks
-
 
 
 @rank_zero_only
@@ -145,12 +160,12 @@ def log_hyperparameters(object_dict: dict) -> None:
     )
 
     dict_model = OmegaConf.to_container(cfg.model)
-    if dict_model.get('encoders_mod') is not None:
-        for ix, module_mod in enumerate(dict_model['encoders_mod']):
-            hparams['model/encoders_mod/{}'.format(ix)] = module_mod
-    if dict_model.get('projectors_mod') is not None:
-        for ix, module_mod in enumerate(dict_model['projectors_mod']):
-            hparams['model/projectors_mod/{}'.format(ix)] = module_mod
+    if dict_model.get("encoders_mod") is not None:
+        for ix, module_mod in enumerate(dict_model["encoders_mod"]):
+            hparams["model/encoders_mod/{}".format(ix)] = module_mod
+    if dict_model.get("projectors_mod") is not None:
+        for ix, module_mod in enumerate(dict_model["projectors_mod"]):
+            hparams["model/projectors_mod/{}".format(ix)] = module_mod
 
     # save others
     hparams["datamodule"] = OmegaConf.to_container(cfg.datamodule)

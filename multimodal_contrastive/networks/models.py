@@ -90,7 +90,7 @@ class MultiModalContrastive_PL(pl.LightningModule):
     ):
         outs = defaultdict(list)
         returned_mols = []
-        
+
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         with torch.no_grad():
@@ -101,7 +101,7 @@ class MultiModalContrastive_PL(pl.LightningModule):
                 if return_mol:
                     returned_mols.extend([*x_dict["struct"].mols])
                 x_dict = move_batch_input_to_device(x_dict, device=device)
-                
+
                 batch_representations = self.compute_representations(
                     x_dict, mod_name=mod_name
                 )
@@ -187,19 +187,23 @@ class GMC_PL(MultiModalContrastive_PL):
         lr,
         **kwargs,
     ):
-        super().__init__(loss_name=loss_name, encoders_mod=encoders_mod, projectors_mod=projectors_mod, temperature=temperature, lr=lr)
+        super().__init__(
+            loss_name=loss_name,
+            encoders_mod=encoders_mod,
+            projectors_mod=projectors_mod,
+            temperature=temperature,
+            lr=lr,
+        )
         self.save_hyperparameters()
         self.encoder_joint = encoder_joint
         self.encoders.update({"joint": self.encoder_joint})
         self.common_encoder = common_encoder
-        
 
     def _mod_encode(self, x_mod, encoders_mod, proj):
         emb_mod_ = encoders_mod(x_mod)
         emb_mod = proj(emb_mod_)
         mod_representations = self.common_encoder(emb_mod)
         return mod_representations
-
 
 
 class CLIP_PL(MultiModalContrastive_PL):
@@ -223,7 +227,13 @@ class CLIP_PL(MultiModalContrastive_PL):
         lr,
         **kwargs,
     ):
-        super().__init__(loss_name=loss_name, encoders_mod=encoders_mod, projectors_mod=projectors_mod, temperature=temperature, lr=lr)
+        super().__init__(
+            loss_name=loss_name,
+            encoders_mod=encoders_mod,
+            projectors_mod=projectors_mod,
+            temperature=temperature,
+            lr=lr,
+        )
         self.save_hyperparameters()
 
     def _mod_encode(self, x_mod, encoders_mod, proj):
@@ -233,7 +243,16 @@ class CLIP_PL(MultiModalContrastive_PL):
 
 
 class MultiTask_PL(pl.LightningModule):
-    def __init__(self, loss_name, num_tasks, lr, backbone=None, ckp=None, backbone_name=None, mod_name="struct"):
+    def __init__(
+        self,
+        loss_name,
+        num_tasks,
+        lr,
+        backbone=None,
+        ckp=None,
+        backbone_name=None,
+        mod_name="struct",
+    ):
         super().__init__()
         self.mod_name = mod_name
         if backbone is None:
@@ -242,7 +261,11 @@ class MultiTask_PL(pl.LightningModule):
             elif backbone_name == "clip":
                 backbone = CLIP_PL.load_from_checkpoint(ckp)
         self.model = MultiTask_model(
-            backbone=backbone, loss_name=loss_name, num_tasks=num_tasks, mod_name=self.mod_name, lr=lr, 
+            backbone=backbone,
+            loss_name=loss_name,
+            num_tasks=num_tasks,
+            mod_name=self.mod_name,
+            lr=lr,
         )
         self.save_hyperparameters()
 
@@ -258,7 +281,6 @@ class MultiTask_PL(pl.LightningModule):
 
         return loss
 
-    
     def training_step(self, batch, batch_idx):
         loss = self._step(batch=batch, batch_idx=batch_idx, step_name="train")
 
@@ -274,7 +296,7 @@ class MultiTask_PL(pl.LightningModule):
         )
 
         return loss
-        
+
     def validation_step(self, batch, batch_idx):
         loss = self._step(
             batch=batch,
