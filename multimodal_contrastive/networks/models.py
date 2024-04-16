@@ -19,7 +19,7 @@ from ..networks.components import (
     JointEncoder,
     MultiTask_model,
 )
-
+import torchmetrics
 
 class MultiModalContrastive_PL(pl.LightningModule):
     """Parent class for triple and dual contrastive learning module.
@@ -268,51 +268,39 @@ class MultiTask_PL(pl.LightningModule):
             lr=lr,
         )
         self.save_hyperparameters()
+        self.metrics = dict()
+        self.metrics["auc"] = torchmetrics.classification.BinaryAUROC()
+        self.metrics["auprc"] = torchmetrics.classification.BinaryAveragePrecision()
 
     def configure_optimizers(self):
         return self.model.optimizer
 
+    def _log_metric(self, step_name, logits, y, batch_size):
+        if step_name in ("train", "val", "test"):
+            for metric_name, metric_func in self.metrics.items():
+                metric_str = f"{step_name}/{metric_name}"
+                self.log(metric_str, metric_func(logits, y).item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+
+    
     def _step(self, batch, batch_idx, step_name, dataloader_idx=None):
         label = batch["labels"]
+        batch_size = batch["labels"].shape[0]
         probs, logits = self.model._forward_with_sigmoid(
             batch, mod_name=self.mod_name, return_mod="logits"
         )
-        loss = self.model.loss(logits, label)
+        loss, valid_output, valid_label, mask = self.model.loss(logits, label)
+        self.log(f"{step_name}/loss", loss.item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+
+        # global metrics
+        self._log_metric(step_name, valid_output, valid_label.long(), batch_size)
 
         return loss
 
     def training_step(self, batch, batch_idx):
-        loss = self._step(batch=batch, batch_idx=batch_idx, step_name="train")
-
-        batch_size = batch["labels"].shape[0]
-
-        self.log(
-            "train/loss",
-            loss,
-            sync_dist=True,
-            prog_bar=True,
-            logger=True,
-            batch_size=batch_size,
-        )
-
-        return loss
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="train")
 
     def validation_step(self, batch, batch_idx):
-        loss = self._step(
-            batch=batch,
-            batch_idx=batch_idx,
-            step_name="val",
-        )
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="val")
 
-        batch_size = batch["labels"].shape[0]
-
-        self.log(
-            "val/loss",
-            loss,
-            sync_dist=True,
-            prog_bar=True,
-            logger=True,
-            batch_size=batch_size,
-        )
-
-        return loss
+    def test_step(self, batch, batch_idx):
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="test")

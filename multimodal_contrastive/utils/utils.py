@@ -37,7 +37,7 @@ def instantiate_model(cfg: DictConfig):
             cfg.model,
             encoder_joint=encoder_joint,
         )
-    elif cfg.model._target_ == "multimodal_contrastive.networks.models.CLIP_PL":
+    elif cfg.model._target_ in ['multimodal_contrastive.networks.models.CLIP_PL', 'multimodal_contrastive.networks.models.MultiTask_PL']:
         # Init lightning model
         logging.info(f"Instantiating lightning model <{cfg.model._target_}>")
         model: LightningModule = hydra.utils.instantiate(cfg.model)

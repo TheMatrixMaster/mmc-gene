@@ -205,4 +205,4 @@ class MultiTaskLoss(torch.nn.Module):
             valid_output, valid_label, reduction=self.reduction
         )
 
-        return loss
+        return loss, valid_output, valid_label, mask
