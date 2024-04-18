@@ -9,7 +9,7 @@ import h5py
 from random import Random
 from rdkit import Chem
 from sklearn import preprocessing
-
+import pickle
 
 class H5Dataset(torch.utils.data.Dataset):
     def __init__(
@@ -18,6 +18,7 @@ class H5Dataset(torch.utils.data.Dataset):
         mods,
         labels=None,
         joint_as_input=False,
+        cluster: str=None,
     ):
         self.f = h5py.File(data, "r")
         if "valid_smiles" in self.f.keys():
@@ -31,6 +32,10 @@ class H5Dataset(torch.utils.data.Dataset):
         self.y = labels
         if self.y is None:
             self.y = torch.Tensor([-1])
+
+        if cluster is not None:
+            with open(cluster, 'rb') as handle:
+                self.clusters = pickle.load(handle)
 
     def subset(self, size=3000):
         idx = np.random.choice(len(self.ids), size, replace=False)
@@ -73,12 +78,14 @@ class H5DatasetJUMP(H5Dataset):
         joint_as_input=True,
         morph_mode="mean",
         avg_morph_feat=True,
+        cluster: str=None,
     ):
         super().__init__(
             data,
             mods,
             labels,
             joint_as_input,
+            cluster,
         )
         self.morph_mode = morph_mode
         self.struct_ipt = struct_ipt
@@ -128,12 +135,13 @@ class H5DatasetPUMA(H5Dataset):
     labels: list of labels for supervised task/loss, default is None
     """
 
-    def __init__(self, data, labels=None, mods=None, joint_as_input=False):
+    def __init__(self, data, labels=None, mods=None, joint_as_input=False, cluster: str=None,):
         super().__init__(
             data,
             mods,
             labels,
             joint_as_input,
+            cluster, 
         )
         self.data_morph = preprocessing.normalize(self.f["morph"][...], axis=1)
         self.data_ge = preprocessing.normalize(self.f["ge"][...], axis=1)
