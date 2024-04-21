@@ -19,7 +19,7 @@ from ..networks.components import (
     JointEncoder,
     MultiTask_model,
 )
-
+import torchmetrics
 
 class MultiModalContrastive_PL(pl.LightningModule):
     """Parent class for triple and dual contrastive learning module.
@@ -90,7 +90,7 @@ class MultiModalContrastive_PL(pl.LightningModule):
     ):
         outs = defaultdict(list)
         returned_mols = []
-        
+
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         with torch.no_grad():
@@ -101,7 +101,7 @@ class MultiModalContrastive_PL(pl.LightningModule):
                 if return_mol:
                     returned_mols.extend([*x_dict["struct"].mols])
                 x_dict = move_batch_input_to_device(x_dict, device=device)
-                
+
                 batch_representations = self.compute_representations(
                     x_dict, mod_name=mod_name
                 )
@@ -187,19 +187,23 @@ class GMC_PL(MultiModalContrastive_PL):
         lr,
         **kwargs,
     ):
-        super().__init__(loss_name=loss_name, encoders_mod=encoders_mod, projectors_mod=projectors_mod, temperature=temperature, lr=lr)
+        super().__init__(
+            loss_name=loss_name,
+            encoders_mod=encoders_mod,
+            projectors_mod=projectors_mod,
+            temperature=temperature,
+            lr=lr,
+        )
         self.save_hyperparameters()
         self.encoder_joint = encoder_joint
         self.encoders.update({"joint": self.encoder_joint})
         self.common_encoder = common_encoder
-        
 
     def _mod_encode(self, x_mod, encoders_mod, proj):
         emb_mod_ = encoders_mod(x_mod)
         emb_mod = proj(emb_mod_)
         mod_representations = self.common_encoder(emb_mod)
         return mod_representations
-
 
 
 class CLIP_PL(MultiModalContrastive_PL):
@@ -223,7 +227,13 @@ class CLIP_PL(MultiModalContrastive_PL):
         lr,
         **kwargs,
     ):
-        super().__init__(loss_name=loss_name, encoders_mod=encoders_mod, projectors_mod=projectors_mod, temperature=temperature, lr=lr)
+        super().__init__(
+            loss_name=loss_name,
+            encoders_mod=encoders_mod,
+            projectors_mod=projectors_mod,
+            temperature=temperature,
+            lr=lr,
+        )
         self.save_hyperparameters()
 
     def _mod_encode(self, x_mod, encoders_mod, proj):
@@ -233,7 +243,16 @@ class CLIP_PL(MultiModalContrastive_PL):
 
 
 class MultiTask_PL(pl.LightningModule):
-    def __init__(self, loss_name, num_tasks, lr, backbone=None, ckp=None, backbone_name=None, mod_name="struct"):
+    def __init__(
+        self,
+        loss_name,
+        num_tasks,
+        lr,
+        backbone=None,
+        ckp=None,
+        backbone_name=None,
+        mod_name="struct",
+    ):
         super().__init__()
         self.mod_name = mod_name
         if backbone is None:
@@ -242,55 +261,46 @@ class MultiTask_PL(pl.LightningModule):
             elif backbone_name == "clip":
                 backbone = CLIP_PL.load_from_checkpoint(ckp)
         self.model = MultiTask_model(
-            backbone=backbone, loss_name=loss_name, num_tasks=num_tasks, mod_name=self.mod_name, lr=lr, 
+            backbone=backbone,
+            loss_name=loss_name,
+            num_tasks=num_tasks,
+            mod_name=self.mod_name,
+            lr=lr,
         )
         self.save_hyperparameters()
+        self.metrics = dict()
+        self.metrics["auc"] = torchmetrics.classification.BinaryAUROC()
+        self.metrics["auprc"] = torchmetrics.classification.BinaryAveragePrecision()
 
     def configure_optimizers(self):
         return self.model.optimizer
 
+    def _log_metric(self, step_name, logits, y, batch_size):
+        if step_name in ("train", "val", "test"):
+            for metric_name, metric_func in self.metrics.items():
+                metric_str = f"{step_name}/{metric_name}"
+                self.log(metric_str, metric_func(logits, y).item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+
+    
     def _step(self, batch, batch_idx, step_name, dataloader_idx=None):
         label = batch["labels"]
+        batch_size = batch["labels"].shape[0]
         probs, logits = self.model._forward_with_sigmoid(
             batch, mod_name=self.mod_name, return_mod="logits"
         )
-        loss = self.model.loss(logits, label)
+        loss, valid_output, valid_label, mask = self.model.loss(logits, label)
+        self.log(f"{step_name}/loss", loss.item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+
+        # global metrics
+        self._log_metric(step_name, valid_output, valid_label.long(), batch_size)
 
         return loss
 
-    
     def training_step(self, batch, batch_idx):
-        loss = self._step(batch=batch, batch_idx=batch_idx, step_name="train")
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="train")
 
-        batch_size = batch["labels"].shape[0]
-
-        self.log(
-            "train/loss",
-            loss,
-            sync_dist=True,
-            prog_bar=True,
-            logger=True,
-            batch_size=batch_size,
-        )
-
-        return loss
-        
     def validation_step(self, batch, batch_idx):
-        loss = self._step(
-            batch=batch,
-            batch_idx=batch_idx,
-            step_name="val",
-        )
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="val")
 
-        batch_size = batch["labels"].shape[0]
-
-        self.log(
-            "val/loss",
-            loss,
-            sync_dist=True,
-            prog_bar=True,
-            logger=True,
-            batch_size=batch_size,
-        )
-
-        return loss
+    def test_step(self, batch, batch_idx):
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="test")

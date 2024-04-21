@@ -34,11 +34,13 @@ model:
 
 callbacks:
     model_checkpoint:
-        monitor: struct-morph~pca_morph~val
-        mode: max
+        # monitor: struct-morph~pca_morph~val
+        # mode: max
+        monitor: val/loss
+        mode: min
 
 trainer:
-  max_epochs: 150
+  max_epochs: 200
   accelerator: gpu
   logger:
     save_dir: /home/mila/s/stephen.lu/scratch/mmc

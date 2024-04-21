@@ -22,6 +22,14 @@ bsub -J test -o output.%J -e output.%J -gpu "num=1" -n 16 -q long -sla gRED_resb
 "python multimodal_contrastive/multimodal_contrastive/pretrain.py"
 ```
 
+# for Evaluation
+```
+# puma 270 assay
+bsub -J test -o output.%J -e output.%J -gpu "num=1" -n 16 -q long -sla gRED_resbioai_gpu
+"python multimodal_contrastive/multimodal_contrastive/pretrain.py ----config-name puma_lp"
+```
+
+
 ### set up config
 add configuration files or modify/use existing configuration file under configs/ to train as needed
 
