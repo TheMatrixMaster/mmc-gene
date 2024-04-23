@@ -1,7 +1,7 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.TestDataset
-    data: /projects/global/gred/resbioai/multimodal/PUMA_data/assay_data/assay_matrix_discrete_270_assays.csv
+    data: /projects/global/gred/resbioai/multimodal/PUMA_data/assay_data/assay_matrix_discrete_37_assays_canonical.csv
     mol_col: smiles
     label_col:
 batch_size: 512

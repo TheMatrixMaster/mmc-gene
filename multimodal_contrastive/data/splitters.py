@@ -388,7 +388,7 @@ class SortedClusterSplitter(ScaffoldSplitter):
         frac_valid: float = 0.1,
         frac_test: float = 0.1,
         seed: Optional[int] = None,
-        balance: str = False,
+        balance: str = True,
     ) -> Tuple[List[int], List[int], List[int]]:
         """
         Splits internal compounds into train/validation/test by cluster.

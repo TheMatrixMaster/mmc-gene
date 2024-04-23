@@ -1,22 +1,12 @@
 from typing import Dict, Union, List, Tuple, Union
-import torch
-from torch.utils.data import Dataset, Subset
 import pandas as pd
 import numpy as np
 from random import Random
 from math import isclose
 from multimodal_contrastive.data.dataset import CustomSubset
-from sklearn.model_selection import train_test_split
-
-from collections.abc import Mapping
-from collections import OrderedDict
-from typing import List, Optional, Sequence, Union
 
 import torch.utils.data
 
-from torch_geometric.data import Batch, Dataset
-from torch_geometric.data.data import Data
-from torch.nn.utils.rnn import pack_padded_sequence, pad_sequence
 from deepchem.splits import RandomSplitter, ScaffoldSplitter, FingerprintSplitter, ButinaSplitter
 from multimodal_contrastive.data.splitters import ShuffledScaffoldSplitter, SortedScaffoldClusterComboSplitter, SortedClusterSplitter
 from rdkit import Chem
@@ -54,7 +44,7 @@ def recursive_len(item):
         return 1
 
 
-def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, holdout=None, holdout_notion='inchi', holdout_to=None, return_idx=False, balance=False):
+def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, holdout=None, holdout_notion='inchi', holdout_to=None, return_idx=False):
     """
     Split dataset in train/val/test sets, using a specific splitting strategy.
     Each random seed leads to a different split.
@@ -75,7 +65,7 @@ def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, hold
     
     if holdout is None:
         train_ix, val_ix, test_ix = splitter.split(
-            dataset, frac_train=sizes[0], frac_valid=sizes[1], frac_test=sizes[2], seed=seed, balance=balance,
+            dataset, frac_train=sizes[0], frac_valid=sizes[1], frac_test=sizes[2], seed=seed
         )
 
     else:

@@ -6,10 +6,6 @@ from collections import abc
 
 def get_loss(
     name="gmc",
-    BarlowTwins_lamda=None,
-    invar_coeff=None,
-    var_coeff=None,
-    cov_coeff=None,
     *args,
     **kwargs
 ):
@@ -205,4 +201,4 @@ class MultiTaskLoss(torch.nn.Module):
             valid_output, valid_label, reduction=self.reduction
         )
 
-        return loss, valid_output, valid_label, mask
+        return loss, valid_output, valid_label
