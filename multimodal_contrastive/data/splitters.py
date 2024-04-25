@@ -20,6 +20,7 @@ class ShuffledScaffoldSplitter(ScaffoldSplitter):
         frac_valid: float = 0.1,
         frac_test: float = 0.1,
         seed: Optional[int] = None,
+        **kwargs,
     ) -> Tuple[List[int], List[int], List[int]]:
         """
         Splits internal compounds into train/validation/test by scaffold.

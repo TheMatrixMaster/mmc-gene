@@ -44,7 +44,6 @@ class MultiInput_DataModule(pl.LightningDataModule):
         self.holdout_to = holdout_to
 
     def setup(self, stage: str):
-
         (
             self.train_dataset,
             self.val_dataset,

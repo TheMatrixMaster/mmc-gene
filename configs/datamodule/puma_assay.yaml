@@ -1,11 +1,15 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.TestDataset
-    data: /projects/global/gred/resbioai/multimodal/PUMA_data/assay_data/assay_matrix_discrete_37_assays_canonical.csv
-    mol_col: smiles
+    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/assay_matrix_discrete_37_assays_canonical.csv
+    mol_col: valid_smiles
     label_col:
+holdout_to: test
+holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/assay_targets_smi.npy
+holdout_notion: smiles
 batch_size: 512
 num_workers: 8
+split_type: random_stratified
 split_sizes:
     - 0.8
     - 0.1

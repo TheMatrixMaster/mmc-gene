@@ -183,6 +183,7 @@ class TestDataset(torch.utils.data.Dataset):
         mol_col="valid_smiles",
         label_col=None,
         sample_ratio=None,
+        hold_out_indices=None,
         device=None,
         seed=0,
     ):
@@ -191,7 +192,7 @@ class TestDataset(torch.utils.data.Dataset):
         if label_col is not None:
             labels = df[label_col].values
         else:
-            label_names = [x for x in df.columns if re.match('^\d',x)]
+            label_names = [x for x in df.columns if re.match('^\d', x)]
             labels = df[label_names].to_numpy()
         if sample_ratio is not None:
             subset_size = int(df.shape[0] * sample_ratio)
@@ -203,10 +204,10 @@ class TestDataset(torch.utils.data.Dataset):
             mols = mols[filter]
             labels = labels[filter]
 
-        # self.y = torch.Tensor(df['191_630'].values.astype(int))
         self.ids = mols
         self.y = torch.Tensor(labels)
-
+        self.w = 1 - torch.isnan(self.y).int()
+        
         if self.y is None:
             self.y = torch.Tensor([-1])
         self.device = device
@@ -261,8 +262,10 @@ class CustomSubset(Subset):
         )
         if self.dataset.y.shape[0] == self.dataset.ids.shape[0]:
             self.y = self.dataset.y[self.indices]
+            self.w = self.dataset.w[self.indices]
         else:
             self.y = None
+            self.w = None
         self.filter_source = filter_source
 
     def __getitem__(self, idx):
