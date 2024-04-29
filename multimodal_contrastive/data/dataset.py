@@ -187,7 +187,7 @@ class TestDataset(torch.utils.data.Dataset):
         device=None,
         seed=0,
     ):
-        df = pd.read_csv(data)
+        df = pd.read_csv(data) if isinstance(data, str) else data
         mols = df[mol_col].values
         if label_col is not None:
             labels = df[label_col].values
