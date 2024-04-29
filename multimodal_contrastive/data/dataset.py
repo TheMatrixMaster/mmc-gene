@@ -182,6 +182,7 @@ class TestDataset(torch.utils.data.Dataset):
         type='fp',
         mol_col="valid_smiles",
         label_col=None,
+        one_hot_labels=False,
         sample_ratio=None,
         hold_out_indices=None,
         device=None,
@@ -191,6 +192,9 @@ class TestDataset(torch.utils.data.Dataset):
         mols = df[mol_col].values
         if label_col is not None:
             labels = df[label_col].values
+            if one_hot_labels:
+                n_values = labels.max()+1
+                labels = np.eye(n_values)[labels]
         else:
             label_names = [x for x in df.columns if re.match('^\d', x)]
             labels = df[label_names].to_numpy()
@@ -239,7 +243,7 @@ class TestDataset(torch.utils.data.Dataset):
             "inputs": {
                 "struct": struct_feat,
             },
-            "labels": self.y[idx, :],
+            "labels": self.y[idx, :] if self.y.ndim > 1 else self.y[idx],
         }
 
     @staticmethod

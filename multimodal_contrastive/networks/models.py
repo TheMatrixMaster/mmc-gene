@@ -3,13 +3,18 @@ import numpy as np
 from collections import defaultdict
 
 from omegaconf import ListConfig, OmegaConf, DictConfig
-from multimodal_contrastive.networks.utils import move_batch_input_to_device
+from multimodal_contrastive.networks.utils import (
+    move_batch_input_to_device,
+    get_output_activation_from_loss
+)
 import torch
 from torch.nn import ModuleList, ModuleDict
 import pytorch_lightning as pl
 from ..networks.loss import get_loss
 from ..networks.components import MultiTask_model,  FP_MLP
 import torchmetrics
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class MultiModalContrastive_PL(pl.LightningModule):
@@ -305,25 +310,36 @@ class MultiTask_FP_PL(pl.LightningModule):
         hidden_layer_dimensions=[64, 64],
         lr=0.00001,
         num_tasks=37,
-        input_dim=2024,
+        input_dim=2048,
         loss_name: str='mtl_bceloss',
     ):
         super().__init__()
 
         self.loss = get_loss(loss_name)
-        self.encoder = FP_MLP(input_dim=input_dim, hidden_layer_dimensions=hidden_layer_dimensions, output_size=num_tasks)
+        self.out_act = get_output_activation_from_loss(loss_name)
+        self.encoder = FP_MLP(
+            input_dim=input_dim,
+            hidden_layer_dimensions=hidden_layer_dimensions,
+            output_size=num_tasks
+        )
         self.lr = lr
         self.save_hyperparameters()
         self.metrics = dict()
-        self.metrics["auc"] = torchmetrics.classification.BinaryAUROC()
-        self.metrics["auprc"] = torchmetrics.classification.BinaryAveragePrecision()
-
+        
+        if loss_name == "cross_entropy":
+            self.metrics["auc"] = torchmetrics.classification.MulticlassAUROC(num_classes=num_tasks).to(device)
+            self.metrics["auprc"] = torchmetrics.classification.MulticlassAveragePrecision(num_classes=num_tasks).to(device)
+            self.metrics["accuracy"] = torchmetrics.classification.MulticlassAccuracy(num_classes=num_tasks).to(device)
+            self.metrics["f1"] = torchmetrics.classification.MulticlassF1Score(num_classes=num_tasks).to(device)
+        elif loss_name == "mtl_bceloss":
+            self.metrics["auc"] = torchmetrics.classification.BinaryAUROC()
+            self.metrics["auprc"] = torchmetrics.classification.BinaryAveragePrecision()
 
     def forward(self, batch, return_mod='logits'):
-        probs, logits = self.encoder._forward_with_sigmoid(
+        probs, logits = self.encoder.forward(
             batch, return_mod=return_mod,
+            out_act=self.out_act
         )
-
         return probs, logits
     
     def configure_optimizers(self):

@@ -1,7 +1,6 @@
 _target_: multimodal_contrastive.networks.models.MultiTask_PL
 loss_name: mtl_bceloss
-num_tasks: 270
+num_tasks: 37
 lr: 0.0001
 backbone_name: gmc
-ckp: /home/luz21/REPO/mmc_sim/configs/model/epoch=120-step=85789.ckpt
 mod_name: struct

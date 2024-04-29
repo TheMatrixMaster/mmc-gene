@@ -485,9 +485,7 @@ class FP_MLP(torch.nn.Module):
             output_size=output_size,
         )
 
-    def _forward_with_sigmoid(
-        self, batch, device="cuda", return_mod="logits"
-    ):
+    def forward(self, batch, device="cuda", return_mod="logits", out_act="sigmoid"):
         label = batch["labels"]
         label = label.to(device)
         x_dict = batch["inputs"]
@@ -495,7 +493,10 @@ class FP_MLP(torch.nn.Module):
 
         logits = self.mlp(x_dict['struct'])
 
-        probs = torch.sigmoid(logits)
+        if out_act == "sigmoid":
+            probs = torch.sigmoid(logits)
+        elif out_act == "softmax":
+            probs = torch.softmax(logits, dim=-1)
 
         if return_mod == "label":
             return probs, label
@@ -503,3 +504,4 @@ class FP_MLP(torch.nn.Module):
             return probs, logits
         elif return_mod is None:
             return probs
+        
