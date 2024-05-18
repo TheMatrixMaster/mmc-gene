@@ -6,10 +6,6 @@ from collections import abc
 
 def get_loss(
     name="gmc",
-    BarlowTwins_lamda=None,
-    invar_coeff=None,
-    var_coeff=None,
-    cov_coeff=None,
     *args,
     **kwargs
 ):
@@ -25,6 +21,8 @@ def get_loss(
         return CLIPLoss()
     elif name == "mtl_bceloss":
         return MultiTaskLoss()
+    elif name == "cross_entropy":
+        return MultiClassCrossEntropyLoss()
 
 
 def off_diagonal(x):
@@ -205,4 +203,16 @@ class MultiTaskLoss(torch.nn.Module):
             valid_output, valid_label, reduction=self.reduction
         )
 
-        return loss, valid_output, valid_label, mask
+        return loss, valid_output, valid_label
+
+
+class MultiClassCrossEntropyLoss(torch.nn.Module):
+    def __init__(self, reduction="mean"):
+        super().__init__()
+        self.reduction = reduction
+
+    def forward(self, output, label):
+        valid_label = label.to(torch.long)
+        valid_output = output.to(torch.float32)
+        loss = F.cross_entropy(valid_output, valid_label, reduction=self.reduction)
+        return loss, valid_output, valid_label

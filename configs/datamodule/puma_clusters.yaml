@@ -1,9 +1,10 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.TestDataset
-    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/assay_matrix_discrete_37_assays_canonical.csv
+    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/cluster_matrix.csv
     mol_col: valid_smiles
-    label_col:
+    label_col: cluster
+    one_hot_labels: False
 holdout_to: test
 holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/diverse_assay_targets_smi.npy
 holdout_notion: smiles

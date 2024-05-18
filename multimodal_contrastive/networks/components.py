@@ -427,12 +427,14 @@ class MultiTask_model(torch.nn.Module):
         x_dict = batch["inputs"]
         x_dict = move_batch_input_to_device(x_dict, device=device)
 
+        #TODO gen reprs with encoder
+
         if self.freeze_backbone is True:
             self.backbone.freeze()
         shared_reprs = self.backbone.compute_representations(x_dict, mod_name=mod_name)
+
         logits = self.linear_layer(shared_reprs)
         probs = torch.sigmoid(logits)
-        loss = self.loss(logits, label)
 
         if return_mod == "label":
             return probs, label
@@ -469,3 +471,37 @@ class MultiTask_model(torch.nn.Module):
         else:
             return np.vstack(probs_list), np.vstack(label_list)
 
+
+class FP_MLP(torch.nn.Module):
+    def __init__(self, input_dim=2048, hidden_layer_dimensions=[64, 64], output_size=270):
+        super().__init__()
+        self.input_dim = input_dim
+        if isinstance(hidden_layer_dimensions, ListConfig):
+            hidden_layer_dimensions = OmegaConf.to_object(hidden_layer_dimensions)
+
+        self.mlp = MultiLayerPerceptron(
+            num_input_features=self.input_dim,
+            hidden_layer_dimensions=hidden_layer_dimensions,
+            output_size=output_size,
+        )
+
+    def forward(self, batch, device="cuda", return_mod="logits", out_act="sigmoid"):
+        label = batch["labels"]
+        label = label.to(device)
+        x_dict = batch["inputs"]
+        x_dict = move_batch_input_to_device(x_dict, device=device)
+
+        logits = self.mlp(x_dict['struct'])
+
+        if out_act == "sigmoid":
+            probs = torch.sigmoid(logits)
+        elif out_act == "softmax":
+            probs = torch.softmax(logits, dim=-1)
+
+        if return_mod == "label":
+            return probs, label
+        elif return_mod == "logits":
+            return probs, logits
+        elif return_mod is None:
+            return probs
+        

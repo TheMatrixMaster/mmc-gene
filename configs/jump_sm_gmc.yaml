@@ -7,13 +7,13 @@ defaults:
   - _self_
 
 datamodule:
-  split_type: scaffold # can be random, scaffold, fingerprint, or butina, default is random
+  split_type: shuffled_scaffold # can be random, scaffold, fingerprint, or butina, default is random
   dataset:
     mods:
     - struct
     - morph
     joint_as_input: True
-    data: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/datasets/jump_pp_fast_public.h5 # change this to the actual path
+    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/jump_pp_fast_public.h5 # change this to the actual path
     morph_mode: mean
   batch_size: 128
   num_workers: 8

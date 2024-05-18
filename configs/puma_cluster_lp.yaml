@@ -1,0 +1,11 @@
+defaults:
+  - datamodule: puma_clusters.yaml
+  - model: fp_mtt.yaml
+  - callbacks: default.yaml
+  - trainer: default.yaml
+  - _self_
+
+model:
+  loss_name: cross_entropy
+  num_tasks: 100
+seed: 0

@@ -1,25 +1,21 @@
 from tqdm import tqdm
 import numpy as np
-import torch.nn.functional as F
 from collections import defaultdict
 
 from omegaconf import ListConfig, OmegaConf, DictConfig
-from multimodal_contrastive.networks.utils import move_batch_input_to_device
-from typing import Iterable, List, Optional, Set, Tuple, Union, Dict
+from multimodal_contrastive.networks.utils import (
+    move_batch_input_to_device,
+    get_output_activation_from_loss
+)
 import torch
-import torch.nn as nn
 from torch.nn import ModuleList, ModuleDict
 import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
-
-from ..networks.loss import get_loss, MultiTaskLoss
-from ..networks.components import (
-    MultiLayerPerceptron,
-    CommonEncoder,
-    JointEncoder,
-    MultiTask_model,
-)
+from ..networks.loss import get_loss
+from ..networks.components import MultiTask_model,  FP_MLP
 import torchmetrics
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class MultiModalContrastive_PL(pl.LightningModule):
     """Parent class for triple and dual contrastive learning module.
@@ -240,9 +236,10 @@ class CLIP_PL(MultiModalContrastive_PL):
         emb_mod_ = encoders_mod(x_mod)
         emb_mod = proj(emb_mod_)
         return emb_mod
+    
 
 
-class MultiTask_PL(pl.LightningModule):
+class MultiTask_Pretrain_PL(pl.LightningModule):
     def __init__(
         self,
         loss_name,
@@ -255,6 +252,7 @@ class MultiTask_PL(pl.LightningModule):
     ):
         super().__init__()
         self.mod_name = mod_name
+        self.loss = get_loss(loss_name)
         if backbone is None:
             if backbone_name == "gmc":
                 backbone = GMC_PL.load_from_checkpoint(ckp)
@@ -288,7 +286,7 @@ class MultiTask_PL(pl.LightningModule):
         probs, logits = self.model._forward_with_sigmoid(
             batch, mod_name=self.mod_name, return_mod="logits"
         )
-        loss, valid_output, valid_label, mask = self.model.loss(logits, label)
+        loss, valid_output, valid_label = self.loss(logits, label)
         self.log(f"{step_name}/loss", loss.item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
 
         # global metrics
@@ -304,3 +302,77 @@ class MultiTask_PL(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         return self._step(batch=batch, batch_idx=batch_idx, step_name="test")
+    
+
+class MultiTask_FP_PL(pl.LightningModule):
+    def __init__(
+        self,
+        hidden_layer_dimensions=[64, 64],
+        lr=0.00001,
+        num_tasks=37,
+        input_dim=2048,
+        loss_name: str='mtl_bceloss',
+    ):
+        super().__init__()
+
+        self.loss = get_loss(loss_name)
+        self.out_act = get_output_activation_from_loss(loss_name)
+        self.encoder = FP_MLP(
+            input_dim=input_dim,
+            hidden_layer_dimensions=hidden_layer_dimensions,
+            output_size=num_tasks
+        )
+        self.lr = lr
+        self.save_hyperparameters()
+        self.metrics = dict()
+        
+        if loss_name == "cross_entropy":
+            self.metrics["auc"] = torchmetrics.classification.MulticlassAUROC(num_classes=num_tasks).to(device)
+            self.metrics["auprc"] = torchmetrics.classification.MulticlassAveragePrecision(num_classes=num_tasks).to(device)
+            self.metrics["accuracy"] = torchmetrics.classification.MulticlassAccuracy(num_classes=num_tasks).to(device)
+            self.metrics["f1"] = torchmetrics.classification.MulticlassF1Score(num_classes=num_tasks).to(device)
+        elif loss_name == "mtl_bceloss":
+            self.metrics["auc"] = torchmetrics.classification.BinaryAUROC()
+            self.metrics["auprc"] = torchmetrics.classification.BinaryAveragePrecision()
+
+    def forward(self, batch, return_mod='logits'):
+        probs, logits = self.encoder.forward(
+            batch, return_mod=return_mod,
+            out_act=self.out_act
+        )
+        return probs, logits
+    
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
+
+    def _log_metric(self, step_name, logits, y, batch_size):
+        if step_name in ("train", "val", "test"):
+            for metric_name, metric_func in self.metrics.items():
+                metric_str = f"{step_name}/{metric_name}"
+                self.log(metric_str, metric_func(logits, y).item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+
+
+    def _step(self, batch, batch_idx, step_name, dataloader_idx=None):
+        label = batch["labels"]
+        batch_size = batch["labels"].shape[0]
+        probs, logits = self.forward(batch, return_mod="logits")
+
+        loss, valid_output, valid_label = self.loss(logits, label)
+        # log loss
+        self.log(f"{step_name}/loss", loss.item(), prog_bar=True, batch_size=batch_size, sync_dist=True)
+        # log global metrics
+        self._log_metric(step_name, valid_output, valid_label.long(), batch_size)
+
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="train")
+
+    def validation_step(self, batch, batch_idx):
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="val")
+
+    def test_step(self, batch, batch_idx):
+        return self._step(batch=batch, batch_idx=batch_idx, step_name="test")
+
+    
+    

@@ -11,7 +11,7 @@ defaults:
 datamodule:
   split_type: shuffled_scaffold
   dataset:
-    mods: 
+    mods:
     - struct
     - morph
     joint_as_input: True

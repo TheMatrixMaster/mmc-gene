@@ -3,13 +3,15 @@ import torch
 from torch.utils.data import Dataset, Subset
 import pandas as pd
 import numpy as np
-from ..data.featurization import mol_to_data
+from ..data.featurization import mol_to_data, mol_to_mf
 from collections import OrderedDict
 import h5py
 from random import Random
 from rdkit import Chem
 from sklearn import preprocessing
 import pickle
+import re
+from rdkit.Chem import rdFingerprintGenerator
 
 class H5Dataset(torch.utils.data.Dataset):
     def __init__(
@@ -177,18 +179,25 @@ class TestDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         data,
-        mol_col="smiles",
+        type='fp',
+        mol_col="valid_smiles",
         label_col=None,
+        one_hot_labels=False,
         sample_ratio=None,
+        hold_out_indices=None,
         device=None,
         seed=0,
     ):
-        df = pd.read_csv(data)
+        df = pd.read_csv(data) if isinstance(data, str) else data
         mols = df[mol_col].values
         if label_col is not None:
             labels = df[label_col].values
+            if one_hot_labels:
+                n_values = labels.max()+1
+                labels = np.eye(n_values)[labels]
         else:
-            labels = df.iloc[:, 1:].to_numpy()
+            label_names = [x for x in df.columns if re.match('^\d', x)]
+            labels = df[label_names].to_numpy()
         if sample_ratio is not None:
             subset_size = int(df.shape[0] * sample_ratio)
             indices = list(range(df.shape[0]))
@@ -199,15 +208,20 @@ class TestDataset(torch.utils.data.Dataset):
             mols = mols[filter]
             labels = labels[filter]
 
-        # self.y = torch.Tensor(df['191_630'].values.astype(int))
         self.ids = mols
         self.y = torch.Tensor(labels)
-
+        self.w = 1 - torch.isnan(self.y).int()
+        
         if self.y is None:
             self.y = torch.Tensor([-1])
         self.device = device
         if self.device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        self.type = type
+        if self.type == 'fp':
+            fpgen = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=2048)
+            self.mf_featurizer = fpgen.GetCountFingerprint
 
     def __len__(self):
         return len(self.ids)
@@ -215,18 +229,21 @@ class TestDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         smile = self.ids[idx]
 
-        struct_feat = self.smile_to_data(
-            smile=smile,
-            label=torch.Tensor(self.y[idx]).float() if self.y is not None else None,
-            mol_features=None,
-        )
-        struct_feat.mols = self.ids[idx]
+        if self.type == "graph":
+            struct_feat = self.smile_to_data(
+                smile=smile,
+                label=torch.Tensor(self.y[idx]).float() if self.y is not None else None,
+                mol_features=None,
+            )
+            struct_feat.mols = smile
+        elif self.type == 'fp':
+            struct_feat = mol_to_mf(smile, self.mf_featurizer, mode='smile', output="tensor")
 
         return {
             "inputs": {
                 "struct": struct_feat,
             },
-            "labels": self.y[idx],
+            "labels": self.y[idx, :] if self.y.ndim > 1 else self.y[idx],
         }
 
     @staticmethod
@@ -249,8 +266,10 @@ class CustomSubset(Subset):
         )
         if self.dataset.y.shape[0] == self.dataset.ids.shape[0]:
             self.y = self.dataset.y[self.indices]
+            self.w = self.dataset.w[self.indices]
         else:
             self.y = None
+            self.w = None
         self.filter_source = filter_source
 
     def __getitem__(self, idx):

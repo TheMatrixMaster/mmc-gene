@@ -23,7 +23,7 @@ warnings.filterwarnings(
 )
 
 
-OmegaConf.register_new_resolver("sum", lambda input_list: np.sum(input_list))
+OmegaConf.register_new_resolver("sum", lambda input_list: np.sum(input_list), replace=True)
 
 
 @hydra.main(config_path="../configs", config_name="puma_smg_gmc", version_base=None)
@@ -60,6 +60,7 @@ def train(cfg):
     )
 
     trainer.fit(model, datamodule, ckpt_path=cfg.get("ckpt_path"))
+    trainer.test(model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"), verbose=True)
 
     print("Best ckp path: {}".format(trainer.checkpoint_callback.best_model_path))
 

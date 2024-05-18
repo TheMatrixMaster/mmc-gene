@@ -30,7 +30,6 @@ class MultiInput_DataModule(pl.LightningDataModule):
         holdout_notion="inchi",
         holdout_to=None,
         seed=0,
-        balance=False,
     ):
         super().__init__()
         self.dataset = dataset
@@ -43,10 +42,8 @@ class MultiInput_DataModule(pl.LightningDataModule):
         self.holdout = holdout
         self.holdout_notion = holdout_notion
         self.holdout_to = holdout_to
-        self.balance = balance
 
     def setup(self, stage: str):
-
         (
             self.train_dataset,
             self.val_dataset,
@@ -63,7 +60,6 @@ class MultiInput_DataModule(pl.LightningDataModule):
             holdout_notion=self.holdout_notion,
             holdout_to=self.holdout_to,
             return_idx=True,
-            balance=self.balance,
         )
 
         print("Train on {} samples.".format(len(self.train_dataset)))
