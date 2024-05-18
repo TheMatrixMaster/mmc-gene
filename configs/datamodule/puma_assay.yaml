@@ -5,7 +5,7 @@ dataset:
     mol_col: valid_smiles
     label_col:
 holdout_to: test
-holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/assay_targets_smi.npy
+holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/diverse_assay_targets_smi.npy
 holdout_notion: smiles
 batch_size: 512
 num_workers: 8

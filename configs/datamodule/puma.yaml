@@ -9,6 +9,9 @@ dataset:
     - morph
     - ge
     joint_as_input: True
+holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/bytes_assay_targets.npy
+holdout_to: test
+holdout_notion: smiles
 batch_size: 128
 num_workers: 8
 split_sizes:

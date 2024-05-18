@@ -109,7 +109,7 @@ def split_data(dataset, split_type="random", sizes=(0.8, 0.1, 0.1), seed=0, hold
             for idx_val in id_idx_to_holdout:
                 for scaffold_idx, scaffold_set in enumerate(scaffold_sets):
                     if idx_val in scaffold_set:
-                        print('Removing scaffold set: {} ({})'.format(scaffold_idx,scaffold_set))
+                        print('Removing scaffold set: {} ({})'.format(scaffold_idx, scaffold_set))
                         holdout_scaffold_sets.append(scaffold_sets.pop(scaffold_idx))
 
             # split based on splitter type

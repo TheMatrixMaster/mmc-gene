@@ -6,7 +6,7 @@ dataset:
     label_col: cluster
     one_hot_labels: False
 holdout_to: test
-holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/assay_targets_smi.npy
+holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/diverse_assay_targets_smi.npy
 holdout_notion: smiles
 batch_size: 512
 num_workers: 8
