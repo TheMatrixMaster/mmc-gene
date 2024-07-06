@@ -16,7 +16,7 @@ datamodule:
     - struct
     - morph
     joint_as_input: True
-    cluster: /home/luz21/PROJECTS/03_MMC/mila/cluster_idx.pkl
+    cluster: path.to.datasets/cluster_idx.pkl
   batch_size: 128
   num_workers: 8
   split_sizes:
@@ -45,10 +45,10 @@ callbacks:
 trainer:
   max_epochs: 200
   accelerator: gpu
-  # logger:
-  #   save_dir: /home/mila/s/stephen.lu/scratch/mmc
-  #   project: omics-guided-gfn
-  #   entity: thematrixmaster
+  logger:
+    save_dir: ~/scratch/mmc
+    project: omics-guided-gfn
+    entity: your.wandb.entity
 
 evaluations:
   latent_dist_correlation:

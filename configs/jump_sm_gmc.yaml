@@ -13,7 +13,7 @@ datamodule:
     - struct
     - morph
     joint_as_input: True
-    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/jump_pp_fast_public.h5 # change this to the actual path
+    data: path.to.datasets/jump_pp_fast_public.h5 # change this to the actual path
     morph_mode: mean
   batch_size: 128
   num_workers: 8
@@ -39,9 +39,9 @@ callbacks:
 trainer:
   max_epochs: 100
   logger:
-    save_dir: /home/mila/s/stephen.lu/scratch/mmc
+    save_dir: ~/scratch/mmc
     project: omics-guided-gfn
-    entity: thematrixmaster
+    entity: your.wandb.entity
 
 evaluations:
   retrieval_evaluation:

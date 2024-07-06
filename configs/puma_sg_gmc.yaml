@@ -37,9 +37,9 @@ trainer:
   max_epochs: 150
   accelerator: gpu
   logger:
-    save_dir: /home/mila/s/stephen.lu/scratch/mmc
+    save_dir: ~/scratch/mmc
     project: omics-guided-gfn
-    entity: thematrixmaster
+    entity: your.wandb.entity
 
 evaluations:
   latent_dist_correlation:

@@ -1,7 +1,7 @@
-program: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/multimodal_contrastive/pretrain.py
+program: multimodal_contrastive/pretrain.py
 description: puma_paper_sweeps
 project: puma_paper_sweeps
-entity: thematrixmaster
+entity: your.wandb.entity
 
 method: bayes
 metric:

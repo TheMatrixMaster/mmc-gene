@@ -1,7 +1,7 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.TestDataset
-    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/chembl20_all.csv
+    data: ~/scratch/mmc/datasets/chembl20_all.csv
     mol_col: smiles
     label_col:
     sample_ratio: 0.01

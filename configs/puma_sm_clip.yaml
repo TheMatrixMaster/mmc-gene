@@ -37,9 +37,9 @@ callbacks:
 trainer:
   max_epochs: 50
   logger:
-    save_dir: /home/mila/s/stephen.lu/scratch/mmc
+    save_dir: ~/scratch/mmc
     project: omics-guided-gfn
-    entity: thematrixmaster
+    entity: your.wandb.entity
 
 evaluations:
   retrieval_evaluation:

@@ -7,7 +7,7 @@ min_epochs: 4
 check_val_every_n_epoch: 1
 logger:
   _target_: pytorch_lightning.loggers.WandbLogger
-  save_dir: /home/mila/s/stephen.lu/gfn_gene/multimodal_contrastive/logs
+  save_dir: ~/scratch/logs
   project: omics-guided-gfn
-  entity: thematrixmaster
+  entity: your.wandb.entity
   # mode: disabled

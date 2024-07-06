@@ -1,15 +1,15 @@
 _target_: multimodal_contrastive.data.datamodule.MultiInput_DataModule
 dataset:
     _target_: multimodal_contrastive.data.dataset.H5DatasetPUMA
-    # data: /home/mila/s/stephen.lu/scratch/mmc/datasets/puma_by_mod_20240424.h5
-    data: /home/mila/s/stephen.lu/scratch/mmc/datasets/puma_by_mod_20240103.h5
+    # data: ~/scratch/mmc/datasets/puma_by_mod_20240424.h5
+    data: ~/scratch/mmc/datasets/puma_by_mod_20240103.h5
     labels:
     mods:
     - struct
     - morph
     - ge
     joint_as_input: True
-holdout: /home/mila/s/stephen.lu/scratch/mmc/datasets/bytes_assay_targets.npy
+holdout: ~/scratch/mmc/datasets/bytes_assay_targets.npy
 holdout_to: test
 holdout_notion: smiles
 batch_size: 128

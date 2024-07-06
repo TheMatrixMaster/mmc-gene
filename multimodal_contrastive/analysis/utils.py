@@ -3,7 +3,6 @@ import numpy as np
 from collections import defaultdict
 from torch_geometric.loader import DataLoader
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
-from multimodal_contrastive.networks.utils import move_batch_input_to_device
 
 from tqdm import tqdm
 from rdkit import Chem
@@ -67,7 +66,6 @@ def save_representations(representations, mols, path):
 def get_pairwise_similarity(modx, mody, metric="euclidean", force_positive=False):
     assert modx.shape[1] == mody.shape[1]
     assert len(modx) == len(mody)
-
     if metric == "euclidean":
         if force_positive:
             return 1 / np.exp(euclidean_distances(modx, mody))
@@ -75,12 +73,6 @@ def get_pairwise_similarity(modx, mody, metric="euclidean", force_positive=False
             return euclidean_distances(modx, mody)
     elif metric == "cosine":
         return cosine_similarity(modx, mody)
-    elif metric == "mse":
-        mse = np.zeros((idx, idx), dtype=float)
-        for i1 in tqdm(range(idx)):
-            for i2 in range(idx):
-                mse[i1, i2] = np.mean((ge[i1] - ge[i2]) ** 2)
-        return mse
     else:
         raise ValueError(f"Unknown metric: {metric}")
 
