@@ -1,37 +1,33 @@
-# multimodal_contrastive
+# Multimodal Contrastive
+This module provides a framework for training and evaluating contrastive learning models on multimodal biological datasets. Specifically, we provide implementations of CLIP and GMC on the CellPainting dataset.
 
-```
-#set up environment:
+## Setup
+```bash
+# Set up conda environment:
 conda env create -f env.yml
 
-#install develop version of multimodal_contrastive module
+# Install development version of multimodal_contrastive module
 pip install -e .
-
 ```
 
+## Train a model
+We use hydra to manage configurations. To train a model, you must specify a configuration file in the `configs/` directory. Before running the training script, you must set valid paths to the datasets, log directory, and other parameters in the config file. For example, to train a 2-modality (structure and morphology) GMC model on the PUMA dataset, you can use the following command:
 
-# for Pretrain
-
-1. set up config
-modify multimodal_contrastive/configs/pretrain.yaml file to change model and data set as needed
-
-2. run command
-```
-# for training
-bsub -J test -o output.%J -e output.%J -gpu "num=1" -n 16 -q long -sla gRED_resbioai_gpu
-"python multimodal_contrastive/multimodal_contrastive/pretrain.py"
+```bash
+# In project root directory
+python multimodal_contrastive/pretrain.py --config-name puma_sm_gmc.yaml
 ```
 
-# for Evaluation
-```
-# puma 270 assay
-bsub -J test -o output.%J -e output.%J -gpu "num=1" -n 16 -q long -sla gRED_resbioai_gpu
-"python multimodal_contrastive/multimodal_contrastive/pretrain.py ----config-name puma_lp"
-```
+## Evaluation
+All evaluation protocols are also managed through hydra config files under the `configs/evaluations` directory. Currently, we support the following evaluation protocols:
+
+- `latent_dist_correlation.yaml`: Measures the cross-modality latent distance correlation between a pair of samples in the test set. See the paper for more details.
+- `retrieval_evaluation.yaml`: Evaluates the cross-modality retrieval performance on the test set.
+- `linear_probe.yaml`: Trains a linear classifier on the learned representations and evaluates the classification accuracy on the test set.
 
 
-### set up config
-add configuration files or modify/use existing configuration file under configs/ to train as needed
+### More about configuration files
+You may add configuration files or modify/use existing ones under `configs/` to train as needed. 
 
 some configuration files:
 1. configs/puma_smg_gmc.yaml: 3modality GMC model use PUMA dataset
@@ -39,38 +35,3 @@ some configuration files:
 3. configs/puma_sm_clip.yaml: 2modality CLIP model use PUMA dataset
 4. configs/jump_sm_gmc.yaml: 2modality GMC model use JUMP dataset
 5. configs/jump_sm_clip.yaml: 2modality CLIP model use JUMP dataset
-
-### run command
-```
-# for training
-bsub -J test -o output.%J -e output.%J -gpu "num=1" -M 4G -n 16 -q long -sla gRED_resbioai_gpu "HYDRA_FULL_ERROR=1 CUDA_LAUNCH_BLOCKING=1 HYDRA_FULL_ERROR=1 python pretrain.py --config-name jump_sm_clip.yaml"
-```
-
-# for Sweeps
-
-1. generate sweep path:
-```
-wandb sweep configs/sweeps/sweeps.yaml
-```
-
-3. copy sweep path to multimodal_contrastive/sweep.bsub
-```
-#!/bin/bash -i
-#BSUB -J sweeps[1-10]
-#BSUB -q long
-#BSUB -n 18
-#BSUB -gpu "num=1"
-#BSUB -o /home/luz21/scratch/logs/output.%I
-#BSUB -e /home/luz21/scratch/logs/output.%I
-
-sweep_path=<sweep_path>
-
-wandb agent ${sweep_path}
-```
-
-3. submit bsub script
-```
-bsub < sweep.bsub
-```
-
-
