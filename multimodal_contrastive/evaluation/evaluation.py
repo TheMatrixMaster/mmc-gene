@@ -1,9 +1,5 @@
-from typing import Optional, Sequence, Tuple, Union
-import pytorch_lightning as pl
 import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
-from torch import nn
-from torch.optim import Optimizer
 from tqdm import trange
 import sklearn
 from sklearn.decomposition import PCA
@@ -11,11 +7,8 @@ import numpy as np
 from tqdm import tqdm
 from multimodal_contrastive.data.utils import split_data
 from torch_geometric.loader import DataLoader
-from torch.utils.data.dataloader import default_collate
-from sklearn.linear_model import LogisticRegression
 import collections
 from collections import defaultdict
-from sklearn.metrics import roc_auc_score
 
 from collections import defaultdict
 from multimodal_contrastive.networks.utils import move_batch_input_to_device

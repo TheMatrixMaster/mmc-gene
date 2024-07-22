@@ -7,7 +7,7 @@ defaults:
   - _self_
 
 datamodule:
-  split_type: shuffled_scaffold # can be random, scaffold, fingerprint, or butina, default is random
+  split_type: shuffled_scaffold
   dataset:
     mods:
     - struct

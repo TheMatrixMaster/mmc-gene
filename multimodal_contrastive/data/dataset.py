@@ -12,6 +12,7 @@ from sklearn import preprocessing
 import pickle
 import re
 from rdkit.Chem import rdFingerprintGenerator
+import deepchem as dc
 
 class H5Dataset(torch.utils.data.Dataset):
     def __init__(
@@ -133,7 +134,7 @@ class H5DatasetPUMA(H5Dataset):
     """This is a dataset class for PUMA dataset.
 
     Parameters:
-    data (h5 file path):
+    data: h5 file path
     labels: list of labels for supervised task/loss, default is None
     """
 

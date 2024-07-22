@@ -133,7 +133,7 @@ class JointEncoder(torch.nn.Module):
 
 
 
-class GNEpropGIN(torch.nn.Module):
+class MoleculeEncoder(torch.nn.Module):
     def __init__(
         self,
         in_channels,

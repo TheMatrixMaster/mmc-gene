@@ -2,7 +2,6 @@ from typing import Dict, Union, List, Tuple, Union
 from rdkit import Chem
 from rdkit.Chem import rdmolfiles, rdmolops
 import torch
-import pandas as pd
 import numpy as np
 from torch_geometric.data import Data
 
