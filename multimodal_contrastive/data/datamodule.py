@@ -1,7 +1,3 @@
-import pandas as pd
-import numpy as np
-import torch
-from torch.utils.data import Dataset
 from torch_geometric.loader import DataLoader
 import pytorch_lightning as pl
 from ..data.utils import split_data
@@ -10,11 +6,7 @@ from ..data.utils import split_data
 class MultiInput_DataModule(pl.LightningDataModule):
     """This is a datamodule class
 
-    Parameters:
-    dataset:
-    batch_size:
-    num_workers:
-    pin_memory:
+    Parameters: 
     split_sizes: 3-tuple of float that defines the size of train, val, test dataset
     """
 

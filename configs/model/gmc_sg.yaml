@@ -9,7 +9,7 @@ latent_dim: ${.dim}
 hid_dim: ${.dim}
 encoders_mod:
     struct:
-        _target_: multimodal_contrastive.networks.components.GNEpropGIN
+        _target_: multimodal_contrastive.networks.components.MoleculeEncoder
         in_channels: 133
         edge_dim: 12
         hidden_channels: ${...encode_dim} #same as output size when jk is none
