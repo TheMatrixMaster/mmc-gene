@@ -13,5 +13,6 @@ duckdb
 ipykernel
 umap-learn
 seaborn
+dill
 scipy>=1.8.1
 deepchem==2.7.1

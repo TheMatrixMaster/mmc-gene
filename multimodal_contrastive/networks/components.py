@@ -396,6 +396,10 @@ class MoleculeEncoder(torch.nn.Module):
         self.input_batch_norm.reset_parameters()
 
 
+class GNEpropGIN(MoleculeEncoder):
+    pass
+
+
 class MultiTask_model(torch.nn.Module):
     def __init__(
         self, backbone, loss_name, num_tasks, mod_name, lr=0.001, freeze_backbone=True
